@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
-using AvatarDescriptor = VRC.SDK3.Avatars.Components.VRCAvatarDescriptor;
-using ExpressionsMenu = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu;
-using ExpressionParameters = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters;
+using UnityEngine;
+using UnityEngine.UIElements;
 using VRC.SDK3.Avatars.Components;
+using AvatarDescriptor = VRC.SDK3.Avatars.Components.VRCAvatarDescriptor;
+using ExpressionParameters = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters;
+using ExpressionsMenu = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu;
 
 #if UNITY_EDITOR
 namespace VRCAvatarActions
@@ -12,27 +13,39 @@ namespace VRCAvatarActions
     public class EditorBase : Editor
     {
         protected AvatarDescriptor avatarDescriptor;
+
+        public bool isSubInspector = false;
+
         public override void OnInspectorGUI()
         {
             EditorGUI.BeginChangeCheck();
             {
                 InitStyles();
 
-                //Avatar Descriptor
-                SelectAvatarDescriptor();
-                if (avatarDescriptor == null)
+                if (isSubInspector == false)
                 {
-                    EditorGUILayout.HelpBox("No active avatar descriptor found in scene.", MessageType.Error);
-                }
-                Divider();
+                    //Avatar Descriptor
+                    SelectAvatarDescriptor();
+                    if (avatarDescriptor == null)
+                    {
+                        EditorGUILayout.HelpBox("No active avatar descriptor found in scene.", MessageType.Error);
+                    }
+                    Divider();
 
-                EditorGUI.BeginChangeCheck();
-                EditorGUI.BeginDisabledGroup(avatarDescriptor == null);
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUI.BeginDisabledGroup(avatarDescriptor == null);
+                    {
+                        Inspector_Header();
+                        Inspector_Body();
+                    }
+                    EditorGUI.EndDisabledGroup();
+                }
+                else
                 {
-                    Inspector_Header();
+                    EditorGUI.BeginChangeCheck();
                     Inspector_Body();
                 }
-                EditorGUI.EndDisabledGroup();
+
                 if(EditorGUI.EndChangeCheck())
                     EditorUtility.SetDirty(target);
             }

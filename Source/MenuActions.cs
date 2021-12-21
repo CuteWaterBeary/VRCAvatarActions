@@ -604,6 +604,7 @@ namespace VRCAvatarActions
     public class MenuActionsEditor : BaseActionsEditor
     {
         MenuActions menuScript;
+        private Editor subMenuEditor = null;
 
         public override void Inspector_Header()
         {
@@ -719,6 +720,16 @@ namespace VRCAvatarActions
             }
             EditorGUI.EndDisabledGroup();
             EditorGUILayout.EndHorizontal();
+
+            if (action.subMenu != null)
+            {
+                DrawFoldoutInspector(action.subMenu, ref subMenuEditor);
+
+                if (subMenuEditor is MenuActionsEditor menuActionsEditor)
+                {
+                    menuActionsEditor.isSubInspector = true;
+                }
+            }
         }
         public void DrawInspector_Slider(MenuActions.MenuAction action)
         {
