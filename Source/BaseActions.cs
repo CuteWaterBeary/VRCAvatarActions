@@ -589,14 +589,17 @@ namespace VRCAvatarActions
 
         static void AddObjectToggle(AnimationClip animation, ObjectProperty property, GameObject obj)
         {
+            bool defaultstate = obj.activeSelf;
+
             //Create curve
             var curve = new AnimationCurve();
-            curve.AddKey(new Keyframe(0f, 1f));
+            curve.AddKey(new Keyframe(0f, defaultstate ? 0f : 1f));
             animation.SetCurve(property.path, typeof(GameObject), "m_IsActive", curve);
 
             //Disable the object
-            obj.SetActive(false);
+            obj.SetActive(defaultstate);
         }
+
         static void AddMaterialSwap(AnimationClip animation, ObjectProperty property, GameObject obj)
         {
             //For each material
