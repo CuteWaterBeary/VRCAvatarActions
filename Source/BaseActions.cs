@@ -1,13 +1,14 @@
 ﻿#if UNITY_EDITOR
+using System;
 using System.Collections.Generic;
 using System.IO;
-using UnityEngine;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
+using VRC.SDK3.Avatars.Components;
 using AvatarDescriptor = VRC.SDK3.Avatars.Components.VRCAvatarDescriptor;
 using ExpressionParameters = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters;
 using TrackingType = VRC.SDKBase.VRC_AnimatorTrackingControl.TrackingType;
-using VRC.SDK3.Avatars.Components;
 
 namespace VRCAvatarActions
 {
@@ -524,8 +525,8 @@ namespace VRCAvatarActions
                         {
                             case ObjectProperty.Type.ObjectToggle: AddObjectToggle(animation, item, item.objRef); break;
                             case ObjectProperty.Type.MaterialSwap: AddMaterialSwap(animation, item, item.objRef); break;
-                            case ObjectProperty.Type.BlendShape: (new ObjectProperty.BlendShape(item)).AddKeyframes(animation); break;
-                            case ObjectProperty.Type.PlayAudio: (new ObjectProperty.PlayAudio(item)).AddKeyframes(animation); break;
+                            case ObjectProperty.Type.BlendShape: new ObjectProperty.BlendShape(item).AddKeyframes(animation); break;
+                            case ObjectProperty.Type.PlayAudio: new ObjectProperty.PlayAudio(item).AddKeyframes(animation); break;
                         }
                     }
 
@@ -801,6 +802,20 @@ namespace VRCAvatarActions
             //Save Parameters
             {
                 AvatarDescriptor.expressionParameters.parameters = BuildParameters.ToArray();
+
+                foreach (var parameter in AvatarDescriptor.expressionParameters.parameters)
+                {
+                    var parameterSetting = ActionsDescriptor.expressionParametersStorage.FindParameter(parameter.name);
+                    if (parameterSetting != null)
+                    {
+                        parameter.defaultValue = parameterSetting.defaultValue;
+                        parameter.saved = parameterSetting.saved;
+                    }
+                    else
+                    {
+                        ActionsDescriptor.expressionParametersStorage.parameters = ActionsDescriptor.expressionParametersStorage.parameters.Append(parameter).ToArray();
+                    }
+                }
 
                 //Parameter defaults
                 foreach (var paramDefault in ActionsDescriptor.parameterDefaults)

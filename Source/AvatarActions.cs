@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
 using UnityEditor;
-using ExpressionsMenu = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu;
-using ExpressionParameters = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters;
+using UnityEngine;
 using VRC.SDK3.Avatars.Components;
+using ExpressionParameters = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters;
+using ExpressionsMenu = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu;
 
 #if UNITY_EDITOR
 namespace VRCAvatarActions
@@ -14,6 +15,7 @@ namespace VRCAvatarActions
         //Descriptor Data
         public VRCAvatarDescriptor avatarDescriptor;
         public MenuActions menuActions;
+        public ExpressionParameters expressionParametersStorage;
         public List<NonMenuActions> otherActions = new List<NonMenuActions>();
 
         //Build Options
@@ -26,9 +28,11 @@ namespace VRCAvatarActions
         {
             public string name;
             public float value;
+            public bool saved;
         }
 
         //Meta
+        public bool foldoutParameterSettings = false;
         public bool foldoutBuildData = false;
         public bool foldoutBuildOptions = false;
         public bool foldoutIgnoreLayers = false;
@@ -62,6 +66,7 @@ namespace VRCAvatarActions
     public class AvatarActionsEditor : Editor
     {
         AvatarActions script;
+        private Editor menuEditor = null;
 
         public override void OnInspectorGUI()
         {
@@ -95,6 +100,22 @@ namespace VRCAvatarActions
                 EditorGUILayout.EndHorizontal();
             }
             EditorGUI.indentLevel -= 1;
+
+            EditorBase.Divider();
+
+            if (script.menuActions != null)
+            {
+                // DrawFoldoutInspector(script.menuActions, ref menuEditor);
+                if (!menuEditor)
+                    CreateCachedEditor(script.menuActions, null, ref menuEditor);
+
+                if (menuEditor is MenuActionsEditor menuActionsEditor)
+                {
+                    menuActionsEditor.isSubInspector = true;
+                    menuActionsEditor.avatarDescriptor = script.avatarDescriptor;
+                    menuActionsEditor.OnInspectorGUI();
+                }
+            }
             EditorGUILayout.EndVertical();
 
             //Non-Menu Actions
@@ -122,6 +143,37 @@ namespace VRCAvatarActions
                 }
             }
             EditorGUI.indentLevel -= 1;
+            EditorGUILayout.EndVertical();
+
+            //Expression Parameter Settings
+            EditorGUILayout.BeginVertical(GUI.skin.box);
+            EditorGUI.indentLevel += 1;
+            {
+                EditorGUILayout.BeginHorizontal();
+                script.expressionParametersStorage = (ExpressionParameters)EditorGUILayout.ObjectField("Expression Parameter Settings", script.expressionParametersStorage, typeof(ExpressionParameters), false);
+                EditorGUILayout.EndHorizontal();
+            }
+
+            script.foldoutParameterSettings = EditorGUILayout.Foldout(script.foldoutParameterSettings, "Parameter Settings");
+            EditorGUI.indentLevel -= 1;
+            if (script.foldoutParameterSettings && script.expressionParametersStorage != null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+
+                EditorGUILayout.LabelField("Name", GUILayout.Width(120));
+                EditorGUILayout.LabelField("Type", GUILayout.Width(80));
+                EditorGUILayout.LabelField("Default", GUILayout.Width(64));
+                EditorGUILayout.LabelField("Saved", GUILayout.Width(40));
+
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+
+                foreach (var parameter in script.expressionParametersStorage.parameters)
+                {
+                    DrawExpressionParameter(parameter, script.avatarDescriptor.expressionParameters.FindParameter(parameter.name) != null);
+                }
+            }
             EditorGUILayout.EndVertical();
 
             EditorBase.Divider();
@@ -177,41 +229,41 @@ namespace VRCAvatarActions
                     }
 
                     //Parameter Defaults
-                    {
-                        EditorGUI.indentLevel += 1;
-                        script.foldoutParameterDefaults = EditorGUILayout.Foldout(script.foldoutParameterDefaults, BaseActionsEditor.Title("Paramater Defaults", script.parameterDefaults.Count > 0));
-                        if (script.foldoutParameterDefaults)
-                        {
-                            //Add
-                            GUILayout.BeginHorizontal();
-                            GUILayout.Space(EditorGUI.indentLevel * 10);
-                            if (GUILayout.Button("Add"))
-                            {
-                                script.parameterDefaults.Add(new AvatarActions.ParamDefault());
-                            }
-                            GUILayout.EndHorizontal();
+                    // {
+                    //     EditorGUI.indentLevel += 1;
+                    //     script.foldoutParameterDefaults = EditorGUILayout.Foldout(script.foldoutParameterDefaults, BaseActionsEditor.Title("Paramater Defaults", script.parameterDefaults.Count > 0));
+                    //     if (script.foldoutParameterDefaults)
+                    //     {
+                    //         //Add
+                    //         GUILayout.BeginHorizontal();
+                    //         GUILayout.Space(EditorGUI.indentLevel * 10);
+                    //         if (GUILayout.Button("Add"))
+                    //         {
+                    //             script.parameterDefaults.Add(new AvatarActions.ParamDefault());
+                    //         }
+                    //         GUILayout.EndHorizontal();
 
-                            //Layers
-                            for (int i = 0; i < script.parameterDefaults.Count; i++)
-                            {
-                                var value = script.parameterDefaults[i];
+                    //         //Layers
+                    //         for (int i = 0; i < script.parameterDefaults.Count; i++)
+                    //         {
+                    //             var value = script.parameterDefaults[i];
 
-                                EditorGUILayout.BeginHorizontal();
-                                value.name = EditorGUILayout.TextField(value.name);
-                                value.value = EditorGUILayout.FloatField(value.value);
+                    //             EditorGUILayout.BeginHorizontal();
+                    //             value.name = EditorGUILayout.TextField(value.name);
+                    //             value.value = EditorGUILayout.FloatField(value.value);
 
-                                script.parameterDefaults[i] = value;
+                    //             script.parameterDefaults[i] = value;
 
-                                if (GUILayout.Button("X", GUILayout.Width(32)))
-                                {
-                                    script.parameterDefaults.RemoveAt(i);
-                                    i--;
-                                }
-                                EditorGUILayout.EndHorizontal();
-                            }
-                        }
-                        EditorGUI.indentLevel -= 1;
-                    }
+                    //             if (GUILayout.Button("X", GUILayout.Width(32)))
+                    //             {
+                    //                 script.parameterDefaults.RemoveAt(i);
+                    //                 i--;
+                    //             }
+                    //             EditorGUILayout.EndHorizontal();
+                    //         }
+                    //     }
+                    //     EditorGUI.indentLevel -= 1;
+                    // }
                 }
             }
             EditorGUI.indentLevel -= 1;
@@ -255,6 +307,33 @@ namespace VRCAvatarActions
             }
             EditorGUI.indentLevel -= 1;
             EditorGUILayout.EndVertical();
+        }
+
+        void DrawExpressionParameter(ExpressionParameters.Parameter parameter, bool used)
+        {
+            EditorGUI.BeginDisabledGroup(!used);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+
+            EditorGUILayout.LabelField(ObjectNames.NicifyVariableName(parameter.name), GUILayout.Width(120));
+            EditorGUILayout.LabelField(parameter.valueType.ToString(), GUILayout.Width(80));
+            switch (parameter.valueType)
+            {
+                case ExpressionParameters.ValueType.Int:
+                    parameter.defaultValue = Mathf.Clamp(EditorGUILayout.IntField((int)parameter.defaultValue, GUILayout.Width(64)), 0, 255);
+                    break;
+                case ExpressionParameters.ValueType.Float:
+                    parameter.defaultValue = Mathf.Clamp(EditorGUILayout.FloatField(parameter.defaultValue, GUILayout.Width(64)), -1f, 1f);
+                    break;
+                case ExpressionParameters.ValueType.Bool:
+                    parameter.defaultValue = EditorGUILayout.Toggle(parameter.defaultValue != 0, GUILayout.Width(64)) ? 1f : 0f;
+                    break;
+            }
+            parameter.saved = EditorGUILayout.Toggle(parameter.saved, GUILayout.Width(40));
+
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            EditorGUI.EndDisabledGroup();
         }
     }
 }
