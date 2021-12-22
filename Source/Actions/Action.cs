@@ -440,8 +440,8 @@ namespace VRCAvatarActions
 
                         switch (item.type)
                         {
-                            case ObjectProperty.Type.ObjectToggle: AddObjectToggle(animation, item, item.objRef); break;
-                            case ObjectProperty.Type.MaterialSwap: AddMaterialSwap(animation, item, item.objRef); break;
+                            case ObjectProperty.Type.ObjectToggle: new ObjectToggleProperty(item).AddKeyframes(animation); break;
+                            case ObjectProperty.Type.MaterialSwap: new MaterialSwapProperty(item).AddKeyframes(animation); break;
                             case ObjectProperty.Type.BlendShape: new BlendShapeProperty(item).AddKeyframes(animation); break;
                             case ObjectProperty.Type.PlayAudio: new PlayAudioProperty(item).AddKeyframes(animation); break;
                         }

@@ -1,9 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
-
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 namespace VRCAvatarActions
 {
     public abstract class NonMenuActions : BaseActions

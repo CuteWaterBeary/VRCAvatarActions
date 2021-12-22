@@ -2,20 +2,16 @@
 
 namespace VRCAvatarActions
 {
-    public abstract partial class BaseActions
+    public enum GestureEnum
     {
-        //Types
-        public enum GestureEnum
-        {
-            Neutral,
-            Fist,
-            OpenHand,
-            FingerPoint,
-            Victory,
-            RockNRoll,
-            HandGun,
-            ThumbsUp,
-        }
+        Neutral,
+        Fist,
+        OpenHand,
+        FingerPoint,
+        Victory,
+        RockNRoll,
+        HandGun,
+        ThumbsUp,
     }
 }
 #endif

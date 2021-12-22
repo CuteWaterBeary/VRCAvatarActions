@@ -38,6 +38,7 @@ public class VisemeToVolume : NonMenuActions
         BuildDriverLayer();
         BuildAnimationLayer();
     }
+
     void BuildDriverLayer()
     {
         var controller = GetController(AnimationLayer.FX);
@@ -74,17 +75,18 @@ public class VisemeToVolume : NonMenuActions
             transition.hasExitTime = false;
             transition.duration = 0;
             transition.hasFixedDuration = true;
-            transition.AddCondition(AnimatorConditionMode.Equals, (float)i, "Viseme");
+            transition.AddCondition(AnimatorConditionMode.Equals, i, "Viseme");
 
             //Playable
             var driver = state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCAvatarParameterDriver>();
-            var param = new VRC.SDK3.Avatars.Components.VRCAvatarParameterDriver.Parameter();
+            var param = new VRC.SDKBase.VRC_AvatarParameterDriver.Parameter();
             param.name = parameter;
             param.type = VRC.SDKBase.VRC_AvatarParameterDriver.ChangeType.Set;
-            param.value = (float)i * 0.01f;
+            param.value = i * 0.01f;
             driver.parameters.Add(param);
         }
     }
+
     void BuildAnimationLayer()
     {
         var action = new MenuActions.MenuAction();

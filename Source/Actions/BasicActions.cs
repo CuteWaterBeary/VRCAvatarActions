@@ -1,7 +1,6 @@
 ﻿#if UNITY_EDITOR
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 using UnityEditor.Animations;
 using ExpressionsMenu = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu;
 using AvatarDescriptor = VRC.SDK3.Avatars.Components.VRCAvatarDescriptor;
@@ -77,15 +76,6 @@ namespace VRCAvatarActions
                 else
                     BuildNormalLayer(controller, actions, layerName, layerType, parentAction);
             });
-        }
-    }
-
-    [CustomEditor(typeof(BasicActions))]
-    public class GenericActionsEditor : BaseActionsEditor
-    {
-        public override void Inspector_Header()
-        {
-            EditorGUILayout.HelpBox("Basic Actions - Actions with no default triggers.", MessageType.Info);
         }
     }
 }

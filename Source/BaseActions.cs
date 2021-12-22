@@ -20,43 +20,11 @@ namespace VRCAvatarActions
             Action,
             FX,
         }
+
         public enum OnOffEnum
         {
             On = 1,
             Off = 0
-        }
-
-        static void AddObjectToggle(AnimationClip animation, ObjectProperty property, GameObject obj)
-        {
-            bool defaultstate = obj.activeSelf;
-
-            //Create curve
-            var curve = new AnimationCurve();
-            curve.AddKey(new Keyframe(0f, defaultstate ? 0f : 1f));
-            animation.SetCurve(property.path, typeof(GameObject), "m_IsActive", curve);
-
-            //Disable the object
-            obj.SetActive(defaultstate);
-        }
-
-        static void AddMaterialSwap(AnimationClip animation, ObjectProperty property, GameObject obj)
-        {
-            //For each material
-            for (int i = 0; i < property.objects.Length; i++)
-            {
-                var material = property.objects[i];
-                if (material == null)
-                    continue;
-
-                //Create curve
-                var keyframes = new ObjectReferenceKeyframe[1];
-                var keyframe = new ObjectReferenceKeyframe();
-                keyframe.time = 0;
-                keyframe.value = material;
-                keyframes[0] = keyframe;
-                EditorCurveBinding binding = EditorCurveBinding.PPtrCurve(property.path, typeof(Renderer), $"m_Materials.Array.data[{i}]");
-                AnimationUtility.SetObjectReferenceCurve(animation, binding, keyframes);
-            }
         }
 
         public abstract void GetActions(List<Action> output);
@@ -64,10 +32,11 @@ namespace VRCAvatarActions
         public abstract void RemoveAction(Action action);
         public abstract void InsertAction(int index, Action action);
 
-        public virtual bool CanUseLayer(BaseActions.AnimationLayer layer)
+        public virtual bool CanUseLayer(AnimationLayer layer)
         {
             return true;
         }
+
         public virtual bool ActionsHaveExit()
         {
             return true;
@@ -89,6 +58,7 @@ namespace VRCAvatarActions
             }
             return null;
         }
+
         protected static bool BuildFailed = false;
         protected static Dictionary<string, AnimationClip> GeneratedClips = new Dictionary<string, AnimationClip>();
         public static Dictionary<string, List<MenuActions.MenuAction>> ParameterToMenuActions = new Dictionary<string, List<MenuActions.MenuAction>>();
@@ -111,6 +81,7 @@ namespace VRCAvatarActions
                 EditorUtility.DisplayDialog("Build Failed", "Build has failed.", "Okay");
             }
         }
+
         public static void BuildSetup()
         {
             //Action Controller
@@ -227,6 +198,7 @@ namespace VRCAvatarActions
                 }
             }
         }
+
         public static void BuildCleanup()
         {
             var components = AvatarDescriptor.gameObject.GetComponentsInChildren<ITemporaryComponent>();
@@ -281,6 +253,7 @@ namespace VRCAvatarActions
 
         //Parameters
         static protected List<ExpressionParameters.Parameter> BuildParameters = new List<ExpressionParameters.Parameter>();
+
         static void InitExpressionParameters()
         {
             //Check if parameter object exists
@@ -306,6 +279,7 @@ namespace VRCAvatarActions
                 }
             }
         }
+
         protected static void DefineExpressionParameter(ExpressionParameters.Parameter parameter)
         {
             //Check if already exists
@@ -318,6 +292,7 @@ namespace VRCAvatarActions
             //Add
             BuildParameters.Add(parameter);
         }
+
         protected static ExpressionParameters.Parameter FindExpressionParameter(string name)
         {
             foreach (var param in BuildParameters)
@@ -356,7 +331,7 @@ namespace VRCAvatarActions
             if (turnOffState)
             {
                 //Animation Layer Weight
-                var layerWeight = waitingState.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCAnimatorLayerControl>();
+                var layerWeight = waitingState.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
                 layerWeight.goalWeight = 0;
                 layerWeight.layer = layerIndex;
                 layerWeight.blendDuration = 0;
@@ -380,14 +355,14 @@ namespace VRCAvatarActions
                     action.AddTransitions(controller, waitingState, state, 0, Action.Trigger.Type.Enter, parentAction);
 
                     //Animation Layer Weight
-                    var layerWeight = state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCAnimatorLayerControl>();
+                    var layerWeight = state.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
                     layerWeight.goalWeight = 1;
                     layerWeight.layer = layerIndex;
                     layerWeight.blendDuration = 0;
                     layerWeight.playable = VRC.SDKBase.VRC_AnimatorLayerControl.BlendableLayer.Action;
 
                     //Playable Layer
-                    var playable = state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCPlayableLayerControl>();
+                    var playable = state.AddStateMachineBehaviour<VRCPlayableLayerControl>();
                     playable.layer = VRC.SDKBase.VRC_PlayableLayerControl.BlendableLayer.Action;
                     playable.goalWeight = 1.0f;
                     playable.blendDuration = action.fadeIn;
@@ -653,7 +628,7 @@ namespace VRCAvatarActions
             }
 
             //Build grouped layers
-            var layerActions = new List<BaseActions.Action>();
+            var layerActions = new List<Action>();
             foreach (var group in layerGroups)
             {
                 //Check if valid
@@ -688,7 +663,7 @@ namespace VRCAvatarActions
         }
 
         //Conditions
-        protected static void AddTriggerConditions(AnimatorController controller, AnimatorStateTransition transition, IEnumerable<BaseActions.Action.Condition> conditions)
+        protected static void AddTriggerConditions(AnimatorController controller, AnimatorStateTransition transition, IEnumerable<Action.Condition> conditions)
         {
             foreach (var condition in conditions)
             {
@@ -796,7 +771,8 @@ namespace VRCAvatarActions
             if (transition.conditions.Length == 0)
                 transition.AddCondition(AnimatorConditionMode.If, 1f, "True");
         }
-        protected static void BuildParameterDrivers(BaseActions.Action action, AnimatorState state)
+
+        protected static void BuildParameterDrivers(Action action, AnimatorState state)
         {
             if (action.parameterDrivers.Count == 0)
                 return;
@@ -857,7 +833,7 @@ namespace VRCAvatarActions
         }
 
         //Helpers
-        protected static void SetupTracking(BaseActions.Action action, AnimatorState state, TrackingType trackingType)
+        protected static void SetupTracking(Action action, AnimatorState state, TrackingType trackingType)
         {
             if (!action.bodyOverride.HasAny())
                 return;
@@ -875,10 +851,9 @@ namespace VRCAvatarActions
             tracking.trackingEyes = action.bodyOverride.eyes ? trackingType : TrackingType.NoChange;
             tracking.trackingMouth = action.bodyOverride.mouth ? trackingType : TrackingType.NoChange;
         }
-        protected static Vector3 StatePosition(int x, int y)
-        {
-            return new Vector3(x * 300, y * 100, 0);
-        }
+
+        protected static Vector3 StatePosition(int x, int y) => new Vector3(x * 300, y * 100, 0);
+
         protected static int GetLayerIndex(AnimatorController controller, AnimatorControllerLayer layer)
         {
             for (int i = 0; i < controller.layers.Length; i++)
@@ -890,6 +865,7 @@ namespace VRCAvatarActions
             }
             return -1;
         }
+
         protected static AnimatorControllerLayer GetControllerLayer(AnimatorController controller, string name)
         {
             //Check if exists
@@ -903,6 +879,7 @@ namespace VRCAvatarActions
             controller.AddLayer(name);
             return controller.layers[controller.layers.Length - 1];
         }
+
         protected static AnimatorControllerParameter AddParameter(AnimatorController controller, string name, AnimatorControllerParameterType type, float value)
         {
             //Clear
@@ -926,6 +903,7 @@ namespace VRCAvatarActions
 
             return param;
         }
+
 
         public static bool SaveAsset(UnityEngine.Object asset, UnityEngine.Object rootAsset, string subDir = null, bool checkIfExists = false)
         {

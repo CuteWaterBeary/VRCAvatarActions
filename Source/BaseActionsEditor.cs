@@ -12,10 +12,6 @@ namespace VRCAvatarActions
         protected BaseActions script;
         protected BaseActions.Action selectedAction;
 
-        public void OnEnable()
-        {
-            var editor = target as BaseActions;
-        }
         public override void Inspector_Body()
         {
             script = target as BaseActions;
@@ -82,11 +78,13 @@ namespace VRCAvatarActions
                 EditorGUI.EndDisabledGroup();
             }
         }
+
         public virtual void Inspector_Action_Header(BaseActions.Action action)
         {
             //Name
             action.name = EditorGUILayout.TextField("Name", action.name);
         }
+
         public virtual void Inspector_Action_Body(BaseActions.Action action, bool showParam = true)
         {
             //Transitions
@@ -161,9 +159,9 @@ namespace VRCAvatarActions
                                 {
                                     switch (property.type)
                                     {
-                                        case ObjectProperty.Type.MaterialSwap: MaterialSwapProperty(property); break;
-                                        case ObjectProperty.Type.BlendShape: BlendShapeProperty(new BlendShapeProperty(property)); break;
-                                        case ObjectProperty.Type.PlayAudio: PlayAudioProperty(new PlayAudioProperty(property)); break;
+                                        case ObjectProperty.Type.MaterialSwap: new MaterialSwapProperty(property).OnGUI(script); break;
+                                        case ObjectProperty.Type.BlendShape: new BlendShapeProperty(property).OnGUI(script); break;
+                                        case ObjectProperty.Type.PlayAudio: new PlayAudioProperty(property).OnGUI(script); break;
                                     }
                                 }
                             }
@@ -202,112 +200,6 @@ namespace VRCAvatarActions
                         property.Clear();
                 }
                 return false;
-            }
-            void MaterialSwapProperty(ObjectProperty property)
-            {
-                //Get object materials
-                var mesh = property.objRef.GetComponent<Renderer>();
-                if (mesh == null)
-                {
-                    EditorGUILayout.HelpBox("GameObject doesn't have a Renderer component.", MessageType.Error);
-                    return;
-                }
-
-                //Materials
-                var materials = mesh.sharedMaterials;
-                if (materials != null)
-                {
-                    //Create/Resize
-                    if (property.objects == null || property.objects.Length != materials.Length)
-                        property.objects = new UnityEngine.Object[materials.Length];
-
-                    //Materials
-                    for (int materialIter = 0; materialIter < materials.Length; materialIter++)
-                    {
-                        EditorGUILayout.BeginHorizontal();
-                        {
-                            EditorGUILayout.LabelField("Material", GUILayout.MaxWidth(100));
-                            EditorGUI.BeginDisabledGroup(true);
-                            EditorGUILayout.ObjectField(materials[materialIter], typeof(Material), false);
-                            EditorGUI.EndDisabledGroup();
-                            property.objects[materialIter] = EditorGUILayout.ObjectField(property.objects[materialIter], typeof(Material), false) as Material;
-                        }
-                        EditorGUILayout.EndHorizontal();
-                    }
-                }
-            }
-            void BlendShapeProperty(BlendShapeProperty property)
-            {
-                var skinnedRenderer = property.objRef.GetComponent<SkinnedMeshRenderer>();
-                if (skinnedRenderer == null)
-                {
-                    EditorGUILayout.HelpBox("GameObject doesn't have a MeshFilter or SkinnedMeshRenderer component.", MessageType.Error);
-                    return;
-                }
-
-                if (skinnedRenderer.name == "Body" || property.prop.path == "Body")
-                {
-                    property.prop.objRef = skinnedRenderer.transform.parent.Find("Face").gameObject;
-                    property.prop.path = "Face";
-                    skinnedRenderer = property.objRef.GetComponent<SkinnedMeshRenderer>();
-                    EditorUtility.SetDirty(script);
-                }
-
-                //Get mesh
-                Mesh mesh = skinnedRenderer.sharedMesh;
-
-                //Setup data
-                property.Setup();
-
-                var popup = new string[mesh.blendShapeCount];
-                for (int i = 0; i < mesh.blendShapeCount; i++)
-                    popup[i] = mesh.GetBlendShapeName(i);
-
-                //Editor
-                EditorGUILayout.BeginHorizontal();
-                {
-                    int index = property.Name != null ? mesh.GetBlendShapeIndex(property.Name) : property.Index;
-                    //Property
-                    property.Index = EditorGUILayout.Popup(index, popup);
-                    property.Name = popup[property.Index];
-
-                    //Value
-                    EditorGUI.BeginChangeCheck();
-                    property.Weight = EditorGUILayout.Slider(property.Weight, 0f, 100f);
-                    if(EditorGUI.EndChangeCheck())
-                    {
-                        //I'd like to preview the change, but preserving the value
-                        //TODO
-                        //skinnedRenderer.SetBlendShapeWeight((int)property.values[0], property.values[1]);
-                    }
-                }
-                EditorGUILayout.EndHorizontal();
-            }
-            void PlayAudioProperty(PlayAudioProperty property)
-            {
-                //Setup
-                property.Setup();
-
-                //Editor
-                //EditorGUILayout.BeginHorizontal();
-                {
-                    //Property
-                    EditorGUILayout.BeginHorizontal();
-                    {
-                        property.AudioClip = (AudioClip)EditorGUILayout.ObjectField("Clip", property.AudioClip, typeof(AudioClip), false);
-                        EditorGUILayout.TextField(property.AudioClip != null ? $"{property.AudioClip.length:N2}" : "", GUILayout.Width(64));
-                    }
-                    EditorGUILayout.EndHorizontal();
-                    property.Volume = EditorGUILayout.Slider("Volume", property.Volume, 0f, 1f);
-                    property.Spatial = EditorGUILayout.Toggle("Spatial", property.Spatial);
-                    EditorGUI.BeginDisabledGroup(!property.Spatial);
-                    {
-                        property.Near = EditorGUILayout.FloatField("Near", property.Near);
-                        property.Far = EditorGUILayout.FloatField("Far", property.Far);
-                    }
-                    EditorGUI.EndDisabledGroup();
-                }
-                //EditorGUILayout.EndHorizontal();
             }
 
             //Animations
@@ -523,15 +415,16 @@ namespace VRCAvatarActions
             EditorGUI.indentLevel -= 1;
             EditorGUILayout.EndVertical();
         }
+
         public bool DrawInspector_Condition(BaseActions.Action.Condition trigger)
         {
             EditorGUILayout.BeginHorizontal(GUI.skin.box);
             {
                 //Type
-                trigger.type = (BaseActions.ParameterEnum)EditorGUILayout.EnumPopup(trigger.type);
+                trigger.type = (ParameterEnum)EditorGUILayout.EnumPopup(trigger.type);
 
                 //Parameter
-                if (trigger.type == BaseActions.ParameterEnum.Custom)
+                if (trigger.type == ParameterEnum.Custom)
                     trigger.parameter = EditorGUILayout.TextField(trigger.parameter);
                 else
                 {
@@ -543,16 +436,16 @@ namespace VRCAvatarActions
                 //Logic
                 switch (trigger.type)
                 {
-                    case BaseActions.ParameterEnum.Custom:
+                    case ParameterEnum.Custom:
                         trigger.logic = (BaseActions.Action.Condition.Logic)EditorGUILayout.EnumPopup(trigger.logic);
                         break;
-                    case BaseActions.ParameterEnum.Upright:
-                    case BaseActions.ParameterEnum.AngularY:
-                    case BaseActions.ParameterEnum.VelocityX:
-                    case BaseActions.ParameterEnum.VelocityY:
-                    case BaseActions.ParameterEnum.VelocityZ:
-                    case BaseActions.ParameterEnum.GestureRightWeight:
-                    case BaseActions.ParameterEnum.GestureLeftWeight:
+                    case ParameterEnum.Upright:
+                    case ParameterEnum.AngularY:
+                    case ParameterEnum.VelocityX:
+                    case ParameterEnum.VelocityY:
+                    case ParameterEnum.VelocityZ:
+                    case ParameterEnum.GestureRightWeight:
+                    case ParameterEnum.GestureLeftWeight:
                         trigger.logic = (BaseActions.Action.Condition.Logic)EditorGUILayout.EnumPopup((BaseActions.Action.Condition.LogicCompare)trigger.logic);
                         break;
                     default:
@@ -563,38 +456,38 @@ namespace VRCAvatarActions
                 //Value
                 switch (trigger.type)
                 {
-                    case BaseActions.ParameterEnum.Custom:
-                    case BaseActions.ParameterEnum.Upright:
-                    case BaseActions.ParameterEnum.AngularY:
-                    case BaseActions.ParameterEnum.VelocityX:
-                    case BaseActions.ParameterEnum.VelocityY:
-                    case BaseActions.ParameterEnum.VelocityZ:
-                    case BaseActions.ParameterEnum.GestureRightWeight:
-                    case BaseActions.ParameterEnum.GestureLeftWeight:
+                    case ParameterEnum.Custom:
+                    case ParameterEnum.Upright:
+                    case ParameterEnum.AngularY:
+                    case ParameterEnum.VelocityX:
+                    case ParameterEnum.VelocityY:
+                    case ParameterEnum.VelocityZ:
+                    case ParameterEnum.GestureRightWeight:
+                    case ParameterEnum.GestureLeftWeight:
                         trigger.value = EditorGUILayout.FloatField(trigger.value);
                         break;
-                    case BaseActions.ParameterEnum.GestureLeft:
-                    case BaseActions.ParameterEnum.GestureRight:
-                        trigger.value = System.Convert.ToInt32(EditorGUILayout.EnumPopup((BaseActions.GestureEnum)(int)trigger.value));
+                    case ParameterEnum.GestureLeft:
+                    case ParameterEnum.GestureRight:
+                        trigger.value = System.Convert.ToInt32(EditorGUILayout.EnumPopup((GestureEnum)(int)trigger.value));
                         break;
-                    case BaseActions.ParameterEnum.Viseme:
-                        trigger.value = System.Convert.ToInt32(EditorGUILayout.EnumPopup((BaseActions.VisemeEnum)(int)trigger.value));
+                    case ParameterEnum.Viseme:
+                        trigger.value = System.Convert.ToInt32(EditorGUILayout.EnumPopup((VisemeEnum)(int)trigger.value));
                         break;
-                    case BaseActions.ParameterEnum.TrackingType:
-                        trigger.value = System.Convert.ToInt32(EditorGUILayout.EnumPopup((BaseActions.TrackingTypeEnum)(int)trigger.value));
+                    case ParameterEnum.TrackingType:
+                        trigger.value = System.Convert.ToInt32(EditorGUILayout.EnumPopup((TrackingTypeEnum)(int)trigger.value));
                         break;
-                    case BaseActions.ParameterEnum.AFK:
-                    case BaseActions.ParameterEnum.MuteSelf:
-                    case BaseActions.ParameterEnum.InStation:
-                    case BaseActions.ParameterEnum.IsLocal:
-                    case BaseActions.ParameterEnum.Grounded:
-                    case BaseActions.ParameterEnum.Seated:
+                    case ParameterEnum.AFK:
+                    case ParameterEnum.MuteSelf:
+                    case ParameterEnum.InStation:
+                    case ParameterEnum.IsLocal:
+                    case ParameterEnum.Grounded:
+                    case ParameterEnum.Seated:
                         EditorGUI.BeginDisabledGroup(true);
                         trigger.value = 1;
                         EditorGUILayout.TextField("True");
                         EditorGUI.EndDisabledGroup();
                         break;
-                    case BaseActions.ParameterEnum.VRMode:
+                    case ParameterEnum.VRMode:
                         EditorGUI.BeginDisabledGroup(true);
                         EditorGUILayout.IntField(1);
                         EditorGUI.EndDisabledGroup();
@@ -658,16 +551,14 @@ namespace VRCAvatarActions
             }
         }
 
-#region HelperMethods
-        public static string Title(string name, bool isModified)
-        {
-            return name + (isModified ? "*" : "");
-        }
-        protected UnityEngine.AnimationClip DrawAnimationReference(string name, UnityEngine.AnimationClip clip, string newAssetName)
+        #region HelperMethods
+        public static string Title(string name, bool isModified) => $"{name}{(isModified ? "*" : "")}";
+
+        protected AnimationClip DrawAnimationReference(string name, AnimationClip clip, string newAssetName)
         {
             EditorGUILayout.BeginHorizontal();
             {
-                clip = (UnityEngine.AnimationClip)EditorGUILayout.ObjectField(name, clip, typeof(UnityEngine.AnimationClip), false);
+                clip = (AnimationClip)EditorGUILayout.ObjectField(name, clip, typeof(AnimationClip), false);
                 EditorGUI.BeginDisabledGroup(clip != null);
                 {
                     if (GUILayout.Button("New", GUILayout.Width(SmallButtonSize)))
@@ -675,7 +566,7 @@ namespace VRCAvatarActions
                         //Create animation    
                         clip = new AnimationClip();
                         clip.name = newAssetName;
-                        BaseActions.SaveAsset(clip, this.script as BaseActions, "", true);
+                        BaseActions.SaveAsset(clip, script, "", true);
                     }
                 }
                 EditorGUI.EndDisabledGroup();
@@ -693,7 +584,8 @@ namespace VRCAvatarActions
             //Return
             return clip;
         }
-        void EditAnimation(UnityEngine.AnimationClip clip)
+
+        void EditAnimation(AnimationClip clip)
         {
             //Add clip source
             var clipSource = avatarDescriptor.gameObject.GetComponent<ClipSource>();
@@ -709,12 +601,12 @@ namespace VRCAvatarActions
             //Open the animation window
             EditorApplication.ExecuteMenuItem("Window/Animation/Animation");
         }
+
         public static GameObject FindPropertyObject(GameObject root, string path)
         {
-            if (string.IsNullOrEmpty(path))
-                return null;
-            return root.transform.Find(path)?.gameObject;
+            return string.IsNullOrEmpty(path) ? null : (root.transform.Find(path)?.gameObject);
         }
+
         string FindPropertyPath(GameObject obj)
         {
             string path = obj.name;

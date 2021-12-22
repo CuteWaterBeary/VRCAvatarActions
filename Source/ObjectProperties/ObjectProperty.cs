@@ -8,19 +8,6 @@ namespace VRCAvatarActions
     [System.Serializable]
     public partial class ObjectProperty
     {
-        public ObjectProperty()
-        {
-        }
-        public ObjectProperty(ObjectProperty source)
-        {
-            this.path = string.Copy(source.path);
-            this.type = source.type;
-            this.objects = source.objects?.ToArray();
-            this.values = source.values?.ToArray();
-            this.stringValues = source.stringValues?.ToArray();
-            this.objRef = source.objRef;
-        }
-
         public enum Type
         {
             ObjectToggle = 3450,
@@ -28,16 +15,31 @@ namespace VRCAvatarActions
             BlendShape = 9301,
             PlayAudio = 9908,
         }
+
         public Type type = Type.ObjectToggle;
 
         //Data
         public string path;
-        public UnityEngine.Object[] objects;
+        public Object[] objects;
         public float[] values;
         public string[] stringValues;
 
         //Meta-data
         public GameObject objRef;
+
+        public ObjectProperty()
+        {
+        }
+
+        public ObjectProperty(ObjectProperty source)
+        {
+            path = string.Copy(source.path);
+            type = source.type;
+            objects = source.objects?.ToArray();
+            values = source.values?.ToArray();
+            stringValues = source.stringValues?.ToArray();
+            objRef = source.objRef;
+        }
 
         public void Clear()
         {
@@ -51,18 +53,15 @@ namespace VRCAvatarActions
         public abstract class PropertyWrapper
         {
             public ObjectProperty prop;
+
             public PropertyWrapper(ObjectProperty property)
             {
-                this.prop = property;
+                prop = property;
             }
-            public string path
-            {
-                get { return prop.path; }
-            }
-            public GameObject objRef
-            {
-                get { return prop.objRef; }
-            }
+
+            public string Path => prop.path;
+            public GameObject ObjRef => prop.objRef;
+
             public abstract void AddKeyframes(AnimationClip animation);
         }
     }

@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using UnityEditor;
 using UnityEngine;
 using static VRCAvatarActions.ObjectProperty;
 
@@ -17,11 +18,7 @@ namespace VRCAvatarActions
             prop.objects = null;
         }
 
-        public int Index
-        {
-            get => (int)prop.values[0];
-            set => prop.values[0] = value;
-        }
+        public int Index { get => (int)prop.values[0]; set => prop.values[0] = value; }
 
         public string Name { get => prop.stringValues[0]; set => prop.stringValues[0] = value; }
 
@@ -35,7 +32,7 @@ namespace VRCAvatarActions
 
                 if (name == null)
                 {
-                    var skinned = objRef.GetComponent<SkinnedMeshRenderer>();
+                    var skinned = ObjRef.GetComponent<SkinnedMeshRenderer>();
                     name = Name = skinned.sharedMesh.GetBlendShapeName(Index);
                 }
             } catch (System.Exception e) {
@@ -45,7 +42,55 @@ namespace VRCAvatarActions
             //Create curve
             var curve = new AnimationCurve();
             curve.AddKey(new Keyframe(0f, Weight));
-            animation.SetCurve(path, typeof(SkinnedMeshRenderer), $"blendShape.{Name}", curve);
+            animation.SetCurve(Path, typeof(SkinnedMeshRenderer), $"blendShape.{Name}", curve);
+        }
+
+        public void OnGUI(BaseActions context)
+        {
+            var skinnedRenderer = ObjRef.GetComponent<SkinnedMeshRenderer>();
+            if (skinnedRenderer == null)
+            {
+                EditorGUILayout.HelpBox("GameObject doesn't have a MeshFilter or SkinnedMeshRenderer component.", MessageType.Error);
+                return;
+            }
+
+            if (skinnedRenderer.name == "Body" || prop.path == "Body")
+            {
+                prop.objRef = skinnedRenderer.transform.parent.Find("Face").gameObject;
+                prop.path = "Face";
+                skinnedRenderer = ObjRef.GetComponent<SkinnedMeshRenderer>();
+                EditorUtility.SetDirty(context);
+            }
+
+            //Get mesh
+            Mesh mesh = skinnedRenderer.sharedMesh;
+
+            //Setup data
+            Setup();
+
+            var popup = new string[mesh.blendShapeCount];
+            for (int i = 0; i < mesh.blendShapeCount; i++)
+                popup[i] = mesh.GetBlendShapeName(i);
+
+            //Editor
+            EditorGUILayout.BeginHorizontal();
+            {
+                int index = Name != null ? mesh.GetBlendShapeIndex(Name) : Index;
+                //Property
+                Index = EditorGUILayout.Popup(index, popup);
+                Name = popup[Index];
+
+                //Value
+                EditorGUI.BeginChangeCheck();
+                Weight = EditorGUILayout.Slider(Weight, 0f, 100f);
+                if(EditorGUI.EndChangeCheck())
+                {
+                    //I'd like to preview the change, but preserving the value
+                    //TODO
+                    //skinnedRenderer.SetBlendShapeWeight((int)values[0], values[1]);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
         }
     }
 }

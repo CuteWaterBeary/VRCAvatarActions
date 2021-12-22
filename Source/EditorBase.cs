@@ -106,6 +106,7 @@ namespace VRCAvatarActions
         public virtual void Inspector_Header()
         {
         }
+
         public virtual void Inspector_Body()
         {
         }
@@ -133,7 +134,6 @@ namespace VRCAvatarActions
             "Stage15",
             "Stage16",
         };
-        protected static List<string> popupCache = new List<string>();
 
         public static string DrawParameterDropDown(string parameter, string label, bool required, VRCAvatarDescriptor avatarDescriptor)
         {
@@ -195,16 +195,19 @@ namespace VRCAvatarActions
 
             return parameter;
         }
+
         protected string DrawParameterDropDown(string parameter, string label, bool required=true)
         {
             return DrawParameterDropDown(parameter, label, required, avatarDescriptor);
         }
+
         protected int GetExpressionParametersCount()
         {
             if (avatarDescriptor != null && avatarDescriptor.expressionParameters != null && avatarDescriptor.expressionParameters.parameters != null)
                 return avatarDescriptor.expressionParameters.parameters.Length;
             return 0;
         }
+
         protected ExpressionParameters.Parameter GetExpressionParameter(int i)
         {
             if (avatarDescriptor != null)
@@ -241,6 +244,7 @@ namespace VRCAvatarActions
         {
             EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
         }
+
         public static Texture2D MakeTex(int width, int height, Color col)
         {
             Color[] pix = new Color[width * height];

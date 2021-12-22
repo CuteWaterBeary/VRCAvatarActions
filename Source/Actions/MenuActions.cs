@@ -6,7 +6,6 @@ using UnityEditor.Animations;
 using ExpressionsMenu = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu;
 using AvatarDescriptor = VRC.SDK3.Avatars.Components.VRCAvatarDescriptor;
 using ExpressionParameters = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters;
-using VRC.SDK3.Avatars.ScriptableObjects;
 
 namespace VRCAvatarActions
 {
@@ -37,14 +36,10 @@ namespace VRCAvatarActions
             public int controlValue = 0;
             public bool foldoutSubActions;
 
-            public bool IsNormalAction()
-            {
-                return menuType == MenuType.Button || menuType == MenuType.Toggle;
-            }
-            public bool NeedsControlLayer()
-            {
-                return menuType == MenuType.Button || menuType == MenuType.Toggle || menuType == MenuType.Slider;
-            }
+            public bool IsNormalAction() => menuType == MenuType.Button || menuType == MenuType.Toggle;
+
+            public bool NeedsControlLayer() => menuType == MenuType.Button || menuType == MenuType.Toggle || menuType == MenuType.Slider;
+
             public override bool ShouldBuild()
             {
                 switch(menuType)
@@ -62,12 +57,12 @@ namespace VRCAvatarActions
                 }
                 return base.ShouldBuild();
             }
+
             public override void CopyTo(Action clone)
             {
                 base.CopyTo(clone);
 
-                var menuClone = clone as MenuAction;
-                if(menuClone != null)
+                if (clone is MenuAction menuClone)
                 {
                     menuClone.icon = icon;
                     menuClone.parameter = parameter;
@@ -86,14 +81,15 @@ namespace VRCAvatarActions
             {
                 return parameter;
             }
+
             public override void AddCondition(AnimatorStateTransition transition, bool equals)
             {
-                if (string.IsNullOrEmpty(this.parameter))
+                if (string.IsNullOrEmpty(parameter))
                     return;
 
                 //Is parameter bool?
                 AnimatorConditionMode mode;
-                var param = FindExpressionParameter(this.parameter);
+                var param = FindExpressionParameter(parameter);
                 if(param.valueType == ExpressionParameters.ValueType.Bool)
                     mode = equals ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot;
                 else if(param.valueType == ExpressionParameters.ValueType.Int)
@@ -106,9 +102,10 @@ namespace VRCAvatarActions
                 }
 
                 //Set
-                transition.AddCondition(mode, this.controlValue, this.parameter);
+                transition.AddCondition(mode, controlValue, parameter);
             }
         }
+
         public List<MenuAction> actions = new List<MenuAction>();
 
         public MenuAction FindMenuAction(string name)
@@ -129,21 +126,25 @@ namespace VRCAvatarActions
             }
             return null;
         }
+
         public override void GetActions(List<Action> output)
         {
             foreach (var action in actions)
                 output.Add(action);
         }
+
         public override Action AddAction()
         {
             var result = new MenuAction();
             actions.Add(result);
             return result;
         }
+
         public override void InsertAction(int index, Action action)
         {
             actions.Insert(index, action as MenuAction);
         }
+
         public override void RemoveAction(Action action)
         {
             actions.Remove(action as MenuAction);
@@ -176,6 +177,7 @@ namespace VRCAvatarActions
             BuildSubActionLayers(validActions, AnimationLayer.Action);
             BuildSubActionLayers(validActions, AnimationLayer.FX);
         }
+
         void CollectValidMenuActions(List<MenuAction> output)
         {
             //Add our actions
@@ -263,6 +265,7 @@ namespace VRCAvatarActions
             foreach(var param in AllParameters)
                 DefineExpressionParameter(param);
         }
+
         static void BuildActionValues(List<MenuAction> sourceActions)
         {
             var parametersObject = AvatarDescriptor.expressionParameters;
@@ -314,6 +317,7 @@ namespace VRCAvatarActions
                 }
             }
         }
+
         static void BuildExpressionsMenu(MenuActions rootMenu)
         {
             List<MenuActions> menuList = new List<MenuActions>();
@@ -480,6 +484,7 @@ namespace VRCAvatarActions
                     BuildNormalLayer(controller, layerActions, parameter.name, layerType, null, turnOffState);
             }
         }
+
         static void BuildSliderLayers(List<MenuAction> sourceActions, AnimationLayer layerType)
         {
             //For each parameter create a new layer
@@ -488,6 +493,7 @@ namespace VRCAvatarActions
                 BuildSliderLayer(sourceActions, layerType, parameter.name);
             }
         }
+
         public static void BuildSliderLayer(List<MenuAction> sourceActions, AnimationLayer layerType, string parameter)
         {
             var controller = GetController(layerType);
@@ -496,7 +502,7 @@ namespace VRCAvatarActions
             var layerActions = new List<MenuAction>();
             foreach (var actionIter in sourceActions)
             {
-                if (actionIter.menuType == MenuActions.MenuAction.MenuType.Slider && actionIter.parameter == parameter && actionIter.GetAnimation(layerType) != null)
+                if (actionIter.menuType == MenuAction.MenuType.Slider && actionIter.parameter == parameter && actionIter.GetAnimation(layerType) != null)
                     layerActions.Add(actionIter);
             }
             if (layerActions.Count == 0)
@@ -532,6 +538,7 @@ namespace VRCAvatarActions
                 layerWeight.playable = VRC.SDKBase.VRC_AnimatorLayerControl.BlendableLayer.FX;
             }
         }
+
         static void BuildSubActionLayers(List<MenuAction> sourceActions, AnimationLayer layerType)
         {
             var controller = GetController(layerType);
@@ -585,6 +592,7 @@ namespace VRCAvatarActions
             }
             return parameter;
         }
+
         static ExpressionParameters.Parameter GenerateParameterIsOpen(MenuAction action)
         {
             return null;
@@ -597,151 +605,6 @@ namespace VRCAvatarActions
             parameter.name = action.parameterIsOpen;
             parameter.valueType = ExpressionParameters.ValueType.Bool;
             return parameter;*/
-        }
-    }
-
-    [CustomEditor(typeof(MenuActions))]
-    public class MenuActionsEditor : BaseActionsEditor
-    {
-        MenuActions menuScript;
-        private Editor subMenuEditor = null;
-
-        public override void Inspector_Header()
-        {
-            EditorGUILayout.HelpBox("Menu Actions - Actions that are displayed in the avatar's action menu.", MessageType.Info);
-        }
-        public override void Inspector_Body()
-        {
-            menuScript = target as MenuActions;
-
-            int actionCount = 0;
-            foreach(var action in menuScript.actions)
-            {
-                if (action.ShouldBuild())
-                    actionCount += 1;
-            }
-            if(actionCount > ExpressionsMenu.MAX_CONTROLS)
-            {
-                EditorGUILayout.HelpBox($"Too many actions are defined, disable or delete until there are only {ExpressionsMenu.MAX_CONTROLS}", MessageType.Error);
-            }
-
-            base.Inspector_Body();
-        }
-        public override void Inspector_Action_Header(BaseActions.Action action)
-        {
-            //Base
-            base.Inspector_Action_Header(action);
-
-            //Type
-            var menuAction = (MenuActions.MenuAction)action;
-            menuAction.menuType = (MenuActions.MenuAction.MenuType)EditorGUILayout.EnumPopup("Type", menuAction.menuType);
-
-            //Icon
-            if (menuAction.menuType != MenuActions.MenuAction.MenuType.PreExisting)
-                menuAction.icon = (Texture2D)EditorGUILayout.ObjectField("Icon", menuAction.icon, typeof(Texture2D), false);
-        }
-        public override void Inspector_Action_Body(BaseActions.Action action, bool showParam = true)
-        {
-            //Details
-            var menuAction = (MenuActions.MenuAction)action;
-            switch (menuAction.menuType)
-            {
-                case MenuActions.MenuAction.MenuType.Button:
-                case MenuActions.MenuAction.MenuType.Toggle:
-                    Inspector_Control(menuAction);
-                    break;
-                case MenuActions.MenuAction.MenuType.Slider:
-                    DrawInspector_Slider(menuAction);
-                    break;
-                case MenuActions.MenuAction.MenuType.SubMenu:
-                    DrawInspector_SubMenu(menuAction);
-                    break;
-                case MenuActions.MenuAction.MenuType.PreExisting:
-                    EditorGUILayout.HelpBox("Pre-Existing will preserve custom expression controls with the same name.", MessageType.Info);
-                    break;
-            }
-        }
-        public void Inspector_Control(MenuActions.MenuAction action)
-        {
-            //Parameter
-            action.parameter = DrawParameterDropDown(action.parameter, "Parameter");
-
-            if(action.menuType == MenuActions.MenuAction.MenuType.Toggle)
-            {
-                string tooltip = "This action will be used when no other toggle with the same parameter is turned on.\n\nOnly one action can be marked as the off state for a parameter name.";
-                action.isOffState = EditorGUILayout.Toggle(new GUIContent("Is Off State", tooltip), action.isOffState);
-            }
-
-            //Default
-            base.Inspector_Action_Body(action);
-
-            //Sub Actions
-            EditorGUILayout.BeginVertical(GUI.skin.box);
-            EditorGUI.indentLevel += 1;
-            action.foldoutSubActions = EditorGUILayout.Foldout(action.foldoutSubActions, Title("Sub Actions", action.subActions.Count > 0));
-            if (action.foldoutSubActions)
-            {
-                //Add
-                if (GUILayout.Button("Add"))
-                {
-                    action.subActions.Add(null);
-                }
-
-                //Sub-Actions
-                for (int i = 0; i < action.subActions.Count; i++)
-                {
-                    EditorGUILayout.BeginHorizontal();
-                    action.subActions[i] = (NonMenuActions)EditorGUILayout.ObjectField(action.subActions[i], typeof(NonMenuActions), false);
-                    if (GUILayout.Button("X", GUILayout.Width(32)))
-                    {
-                        action.subActions.RemoveAt(i);
-                        i--;
-                    }
-                    EditorGUILayout.EndHorizontal();
-                }
-            }
-            EditorGUI.indentLevel -= 1;
-            EditorGUILayout.EndVertical();
-        }
-        public void DrawInspector_SubMenu(MenuActions.MenuAction action)
-        {
-            EditorGUILayout.BeginHorizontal();
-            action.subMenu = (MenuActions)EditorGUILayout.ObjectField("Sub Menu", action.subMenu, typeof(MenuActions), false);
-            EditorGUI.BeginDisabledGroup(action.subMenu != null);
-            if (GUILayout.Button("New", GUILayout.Width(64f)))
-            {
-                //Create
-                var subMenu = ScriptableObject.CreateInstance<MenuActions>();
-                subMenu.name = $"Menu {action.name}";
-                BaseActions.SaveAsset(subMenu, script, null, true);
-
-                //Set
-                action.subMenu = subMenu;
-            }
-            EditorGUI.EndDisabledGroup();
-            EditorGUILayout.EndHorizontal();
-
-            if (action.subMenu != null)
-            {
-                DrawFoldoutInspector(action.subMenu, ref subMenuEditor);
-
-                if (subMenuEditor is MenuActionsEditor menuActionsEditor)
-                {
-                    menuActionsEditor.isSubInspector = true;
-                    menuActionsEditor.avatarDescriptor = avatarDescriptor;
-                }
-            }
-        }
-        public void DrawInspector_Slider(MenuActions.MenuAction action)
-        {
-            //Parameter
-            action.parameter = DrawParameterDropDown(action.parameter, "Parameter");
-
-            //Animations
-            EditorGUI.BeginDisabledGroup(true); //Disable for now
-            action.actionLayerAnimations.enter = DrawAnimationReference("Action Layer", action.actionLayerAnimations.enter, $"{action.name}_Action_Slider");
-            EditorGUI.EndDisabledGroup();
-            action.fxLayerAnimations.enter = DrawAnimationReference("FX Layer", action.fxLayerAnimations.enter, $"{action.name}_FX_Slider");
         }
     }
 }
