@@ -7,7 +7,7 @@ using VRCAvatarActions;
 using VRC.SDK3.Avatars.ScriptableObjects;
 
 [CreateAssetMenu(fileName = "VisemeToVolume", menuName = "VRCAvatarActions/Special Actions/VisemeToVolume")]
-public class VisemeToVolume : VRCAvatarActions.NonMenuActions
+public class VisemeToVolume : NonMenuActions
 {
     public string parameter;
     public AnimationClip animationFx;

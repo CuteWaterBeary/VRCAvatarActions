@@ -1,13 +1,12 @@
 ﻿#if UNITY_EDITOR
 using UnityEngine;
 using System.Linq;
-using VRC.SDK3.Avatars.Components;
 
 namespace VRCAvatarActions
 {
     //Object Toggles
     [System.Serializable]
-    public class ObjectProperty
+    public partial class ObjectProperty
     {
         public ObjectProperty()
         {
@@ -65,136 +64,6 @@ namespace VRCAvatarActions
                 get { return prop.objRef; }
             }
             public abstract void AddKeyframes(AnimationClip animation);
-        }
-        public class BlendShape : PropertyWrapper
-        {
-            public BlendShape(ObjectProperty property) : base(property) { }
-            public void Setup()
-            {
-                if (prop.values == null || prop.values.Length != 2)
-                    prop.values = new float[2];
-                if (prop.stringValues == null || prop.stringValues.Length != 1)
-                    prop.stringValues = new string[1];
-                prop.objects = null;
-            }
-            public int index
-            {
-                get { return (int)prop.values[0]; }
-                set { prop.values[0] = value; }
-            }
-
-            public string name { get => prop.stringValues[0]; set => prop.stringValues[0] = value; }
-
-            public float weight
-            {
-                get { return prop.values[1]; }
-                set { prop.values[1] = value; }
-            }
-            public override void AddKeyframes(AnimationClip animation)
-            {
-                try
-                {
-                    var name = this.name;
-
-                    if (name == null)
-                    {
-                        var skinned = objRef.GetComponent<SkinnedMeshRenderer>();
-                        name = this.name = skinned.sharedMesh.GetBlendShapeName(index);
-                    }
-                } catch (System.Exception e) {
-                    Debug.LogError("Unable to find blendshape " + name);
-                }
-
-                //Create curve
-                var curve = new AnimationCurve();
-                curve.AddKey(new Keyframe(0f, weight));
-                animation.SetCurve(path, typeof(SkinnedMeshRenderer), $"blendShape.{name}", curve);
-            }
-        }
-        public class PlayAudio : PropertyWrapper
-        {
-            public PlayAudio(ObjectProperty property) : base(property) { }
-            public void Setup()
-            {
-                if (prop.values == null || prop.values.Length != 4)
-                {
-                    prop.values = new float[4];
-                    spatial = true;
-                    volume = 1;
-                    near = 6;
-                    far = 20;
-                }
-                if (prop.objects == null || prop.objects.Length != 1)
-                    prop.objects = new UnityEngine.Object[1];
-            }
-            public AudioClip audioClip
-            {
-                get { return prop.objects[0] as AudioClip; }
-                set { prop.objects[0] = value; }
-            }
-            public float volume
-            {
-                get { return prop.values[1]; }
-                set { prop.values[1] = value; }
-            }
-            public bool spatial
-            {
-                get { return prop.values[0] != 0; }
-                set { prop.values[0] = value ? 1f : 0f; }
-            }
-            public float near
-            {
-                get { return prop.values[2]; }
-                set { prop.values[2] = value; }
-            }
-            public float far
-            {
-                get { return prop.values[3]; }
-                set { prop.values[3] = value; }
-            }
-            public override void AddKeyframes(AnimationClip animation)
-            {
-                if (audioClip == null)
-                    return;
-
-                //Find/Create child object
-                var name = $"Audio_{audioClip.name}";
-                var child = objRef.transform.Find(name)?.gameObject;
-                if (child == null)
-                {
-                    child = new GameObject(name);
-                    child.transform.SetParent(objRef.transform, false);
-                }
-                child.SetActive(false); //Disable
-
-                //Find/Create component
-                var audioSource = child.GetComponent<AudioSource>();
-                if(audioSource == null)
-                    audioSource = child.AddComponent<AudioSource>();
-                audioSource.clip = audioClip;
-                audioSource.volume = 0f; //Audio 0 by default
-
-                //Spatial
-                var spatialComp = child.GetComponent<VRCSpatialAudioSource>();
-                if (spatialComp == null)
-                    spatialComp = child.AddComponent<VRCSpatialAudioSource>();
-                spatialComp.EnableSpatialization = spatial;
-                spatialComp.Near = near;
-                spatialComp.Far = far;
-
-                //Create curve
-                var subPath = $"{path}/{name}";
-                {
-                    var curve = new AnimationCurve();
-                    curve.AddKey(new Keyframe(0f, volume));
-                    animation.SetCurve(subPath, typeof(AudioSource), $"m_Volume", curve);
-                }
-                {
-                    var curve = new AnimationCurve();
-                    curve.AddKey(new Keyframe(0f, 1f));
-                    animation.SetCurve(subPath, typeof(GameObject), $"m_IsActive", curve);
-                }
-            }
         }
     }
 }
