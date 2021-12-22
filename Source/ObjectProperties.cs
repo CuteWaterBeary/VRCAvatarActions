@@ -18,6 +18,7 @@ namespace VRCAvatarActions
             this.type = source.type;
             this.objects = source.objects?.ToArray();
             this.values = source.values?.ToArray();
+            this.stringValues = source.stringValues?.ToArray();
             this.objRef = source.objRef;
         }
 
@@ -34,6 +35,7 @@ namespace VRCAvatarActions
         public string path;
         public UnityEngine.Object[] objects;
         public float[] values;
+        public string[] stringValues;
 
         //Meta-data
         public GameObject objRef;
@@ -44,6 +46,7 @@ namespace VRCAvatarActions
             path = null;
             objects = null;
             values = null;
+            stringValues = null;
         }
 
         public abstract class PropertyWrapper
@@ -70,6 +73,8 @@ namespace VRCAvatarActions
             {
                 if (prop.values == null || prop.values.Length != 2)
                     prop.values = new float[2];
+                if (prop.stringValues == null || prop.stringValues.Length != 1)
+                    prop.stringValues = new string[1];
                 prop.objects = null;
             }
             public int index
@@ -77,6 +82,9 @@ namespace VRCAvatarActions
                 get { return (int)prop.values[0]; }
                 set { prop.values[0] = value; }
             }
+
+            public string name { get => prop.stringValues[0]; set => prop.stringValues[0] = value; }
+
             public float weight
             {
                 get { return prop.values[1]; }
@@ -84,8 +92,18 @@ namespace VRCAvatarActions
             }
             public override void AddKeyframes(AnimationClip animation)
             {
-                var skinned = objRef.GetComponent<SkinnedMeshRenderer>();
-                var name = skinned.sharedMesh.GetBlendShapeName(index);
+                try
+                {
+                    var name = this.name;
+
+                    if (name == null)
+                    {
+                        var skinned = objRef.GetComponent<SkinnedMeshRenderer>();
+                        name = this.name = skinned.sharedMesh.GetBlendShapeName(index);
+                    }
+                } catch (System.Exception e) {
+                    Debug.LogError("Unable to find blendshape " + name);
+                }
 
                 //Create curve
                 var curve = new AnimationCurve();

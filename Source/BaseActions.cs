@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
+using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 using AvatarDescriptor = VRC.SDK3.Avatars.Components.VRCAvatarDescriptor;
 using ExpressionParameters = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters;
@@ -1655,6 +1656,7 @@ namespace VRCAvatarActions
                                         //Clear prop data
                                         property.objects = null;
                                         property.values = null;
+                                        property.stringValues = null;
                                     }
 
                                     //Type
@@ -1751,15 +1753,23 @@ namespace VRCAvatarActions
             }
             void BlendShapeProperty(ObjectProperty.BlendShape property)
             {
-                //Get mesh
-                Mesh mesh = null;
                 var skinnedRenderer = property.objRef.GetComponent<SkinnedMeshRenderer>();
                 if (skinnedRenderer == null)
                 {
                     EditorGUILayout.HelpBox("GameObject doesn't have a MeshFilter or SkinnedMeshRenderer component.", MessageType.Error);
                     return;
                 }
-                mesh = skinnedRenderer.sharedMesh;
+
+                if (skinnedRenderer.name == "Body" || property.prop.path == "Body")
+                {
+                    property.prop.objRef = skinnedRenderer.transform.parent.Find("Face").gameObject;
+                    property.prop.path = "Face";
+                    skinnedRenderer = property.objRef.GetComponent<SkinnedMeshRenderer>();
+                    EditorUtility.SetDirty(script);
+                }
+
+                //Get mesh
+                Mesh mesh = skinnedRenderer.sharedMesh;
 
                 //Setup data
                 property.Setup();
@@ -1771,8 +1781,10 @@ namespace VRCAvatarActions
                 //Editor
                 EditorGUILayout.BeginHorizontal();
                 {
+                    int index = property.name != null ? mesh.GetBlendShapeIndex(property.name) : property.index;
                     //Property
-                    property.index = EditorGUILayout.Popup(property.index, popup);
+                    property.index = EditorGUILayout.Popup(index, popup);
+                    property.name = popup[property.index];
 
                     //Value
                     EditorGUI.BeginChangeCheck();
