@@ -728,6 +728,7 @@ namespace VRCAvatarActions
                 if (subMenuEditor is MenuActionsEditor menuActionsEditor)
                 {
                     menuActionsEditor.isSubInspector = true;
+                    menuActionsEditor.avatarDescriptor = avatarDescriptor;
                 }
             }
         }

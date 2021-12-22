@@ -12,7 +12,7 @@ namespace VRCAvatarActions
 {
     public class EditorBase : Editor
     {
-        protected AvatarDescriptor avatarDescriptor;
+        public AvatarDescriptor avatarDescriptor;
 
         public bool isSubInspector = false;
 
