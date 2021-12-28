@@ -78,7 +78,7 @@ namespace VRCAvatarActions
             }
         }
 
-        public void OnGUI(BaseActions context)
+        public override void OnGUI(BaseActions context)
         {
             //Setup
             Setup();

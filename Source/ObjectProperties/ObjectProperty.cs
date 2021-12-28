@@ -6,7 +6,7 @@ namespace VRCAvatarActions
 {
     //Object Toggles
     [System.Serializable]
-    public partial class ObjectProperty
+    public class ObjectProperty
     {
         public enum Type
         {
@@ -48,6 +48,18 @@ namespace VRCAvatarActions
             stringValues = null;
         }
 
+        public PropertyWrapper ToWrapper()
+        {
+            switch (type)
+            {
+                case Type.ObjectToggle: return new ObjectToggleProperty(this);
+                case Type.MaterialSwap: return new MaterialSwapProperty(this);
+                case Type.BlendShape: return new BlendShapeProperty(this);
+                case Type.PlayAudio: return new PlayAudioProperty(this);
+                default: return null;
+            }
+        }
+
         public abstract class PropertyWrapper
         {
             public ObjectProperty prop;
@@ -61,6 +73,8 @@ namespace VRCAvatarActions
             }
 
             public abstract void AddKeyframes(AnimationClip animation);
+
+            public abstract void OnGUI(BaseActions context);
         }
     }
 }

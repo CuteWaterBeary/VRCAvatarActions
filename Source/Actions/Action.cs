@@ -399,13 +399,7 @@ namespace VRCAvatarActions
                         if (item.objRef == null)
                             continue;
 
-                        switch (item.type)
-                        {
-                            case ObjectProperty.Type.ObjectToggle: new ObjectToggleProperty(item).AddKeyframes(animation); break;
-                            case ObjectProperty.Type.MaterialSwap: new MaterialSwapProperty(item).AddKeyframes(animation); break;
-                            case ObjectProperty.Type.BlendShape: new BlendShapeProperty(item).AddKeyframes(animation); break;
-                            case ObjectProperty.Type.PlayAudio: new PlayAudioProperty(item).AddKeyframes(animation); break;
-                        }
+                        item.ToWrapper().AddKeyframes(animation);
                     }
 
                     //Save

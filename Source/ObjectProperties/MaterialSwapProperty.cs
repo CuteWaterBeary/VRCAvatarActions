@@ -34,7 +34,7 @@ namespace VRCAvatarActions
             }
         }
 
-        public void OnGUI(BaseActions context)
+        public override void OnGUI(BaseActions context)
         {
             //Get object materials
             var mesh = ObjRef.GetComponent<Renderer>();

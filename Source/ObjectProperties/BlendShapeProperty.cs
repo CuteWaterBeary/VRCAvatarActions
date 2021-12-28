@@ -47,7 +47,7 @@ namespace VRCAvatarActions
             animation.SetCurve(Path, typeof(SkinnedMeshRenderer), $"blendShape.{Name}", curve);
         }
 
-        public void OnGUI(BaseActions context)
+        public override void OnGUI(BaseActions context)
         {
             var skinnedRenderer = ObjRef.GetComponent<SkinnedMeshRenderer>();
             if (skinnedRenderer == null)

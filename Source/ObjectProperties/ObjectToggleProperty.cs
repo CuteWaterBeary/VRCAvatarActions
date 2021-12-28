@@ -29,6 +29,11 @@ namespace VRCAvatarActions
             //Disable the object
             // obj.SetActive(defaultstate);
         }
+
+        public override void OnGUI(BaseActions context)
+        {
+            
+        }
     }
 }
 #endif

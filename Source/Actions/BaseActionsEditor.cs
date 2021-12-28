@@ -157,12 +157,7 @@ namespace VRCAvatarActions
                                 //Body
                                 if (property.objRef != null)
                                 {
-                                    switch (property.type)
-                                    {
-                                        case ObjectProperty.Type.MaterialSwap: new MaterialSwapProperty(property).OnGUI(script); break;
-                                        case ObjectProperty.Type.BlendShape: new BlendShapeProperty(property).OnGUI(script); break;
-                                        case ObjectProperty.Type.PlayAudio: new PlayAudioProperty(property).OnGUI(script); break;
-                                    }
+                                    property.ToWrapper().OnGUI(script);
                                 }
                             }
                             EditorGUILayout.EndHorizontal();
