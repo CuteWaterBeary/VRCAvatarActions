@@ -35,7 +35,9 @@ namespace VRCAvatarActions
                     var skinned = ObjRef.GetComponent<SkinnedMeshRenderer>();
                     name = Name = skinned.sharedMesh.GetBlendShapeName(Index);
                 }
-            } catch (System.Exception e) {
+            }
+            catch (System.Exception)
+            {
                 Debug.LogError("Unable to find blendshape " + Name);
             }
 
@@ -83,7 +85,7 @@ namespace VRCAvatarActions
                 //Value
                 EditorGUI.BeginChangeCheck();
                 Weight = EditorGUILayout.Slider(Weight, 0f, 100f);
-                if(EditorGUI.EndChangeCheck())
+                if (EditorGUI.EndChangeCheck())
                 {
                     //I'd like to preview the change, but preserving the value
                     //TODO

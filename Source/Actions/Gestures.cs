@@ -7,8 +7,8 @@ using UnityEngine;
 namespace VRCAvatarActions
 {
     [CreateAssetMenu(fileName = "Gestures", menuName = "VRCAvatarActions/Other Actions/Gestures")]
-	public class Gestures : NonMenuActions
-	{
+    public class Gestures : NonMenuActions
+    {
         public enum GestureSide
         {
             Left,
@@ -71,6 +71,8 @@ namespace VRCAvatarActions
 
         public List<GestureAction> actions = new List<GestureAction>();
 
+        public GestureSide side;
+
         public override void GetActions(List<Action> output)
         {
             foreach (var action in actions)
@@ -84,23 +86,15 @@ namespace VRCAvatarActions
             return result;
         }
 
-        public override void RemoveAction(Action action)
-        {
-            actions.Remove(action as GestureAction);
-        }
-
-        public override void InsertAction(int index, Action action)
-        {
-            actions.Insert(index, action as GestureAction);
-        }
+        public override void RemoveAction(Action action) => actions.Remove(action as GestureAction);
+        public override void InsertAction(int index, Action action) => actions.Insert(index, action as GestureAction);
 
         public override bool CanUseLayer(AnimationLayer layer) => layer == AnimationLayer.FX;
 
         public override bool ActionsHaveExit() => false;
 
-        public GestureSide side;
 
-        public override void Build(MenuActions.MenuAction parentAction)
+        public override void Build(ActionsBuilder builder, MenuActions.MenuAction parentAction)
         {
             //Layer name
             var layerName = name;
@@ -108,10 +102,10 @@ namespace VRCAvatarActions
                 layerName = $"{parentAction.name}_{layerName}_SubActions";
 
             //Build
-            BuildNormal(AnimationLayer.FX, layerName, actions, parentAction);
+            BuildNormal(builder, AnimationLayer.FX, layerName, actions, parentAction);
         }
 
-        void BuildNormal(AnimationLayer layerType, string layerName, List<GestureAction> sourceActions, MenuActions.MenuAction parentAction)
+        void BuildNormal(ActionsBuilder builder, AnimationLayer layerType, string layerName, List<GestureAction> sourceActions, MenuActions.MenuAction parentAction)
         {
             //Find all that affect this layer
             var layerActions = new List<GestureAction>();
@@ -127,26 +121,27 @@ namespace VRCAvatarActions
                 return;
 
             //Build
-            BuildLayer(layerType, layerName, layerActions, parentAction);
+            BuildLayer(builder, layerType, layerName, layerActions, parentAction);
         }
-        void BuildLayer(AnimationLayer layerType, string layerName, List<GestureAction> actions, MenuActions.MenuAction parentAction)
+
+        void BuildLayer(ActionsBuilder builder, AnimationLayer layerType, string layerName, List<GestureAction> actions, MenuActions.MenuAction parentAction)
         {
-            var controller = GetController(layerType);
+            var controller = builder.GetController(layerType);
 
             //Add parameter
-            if(side == GestureSide.Left || side == GestureSide.Both)
-                AddParameter(controller, "GestureLeft", AnimatorControllerParameterType.Int, 0);
-            if(side == GestureSide.Right || side == GestureSide.Both)
-                AddParameter(controller, "GestureRight", AnimatorControllerParameterType.Int, 0);
+            if (side == GestureSide.Left || side == GestureSide.Both)
+                builder.AddParameter(controller, "GestureLeft", AnimatorControllerParameterType.Int, 0);
+            if (side == GestureSide.Right || side == GestureSide.Both)
+                builder.AddParameter(controller, "GestureRight", AnimatorControllerParameterType.Int, 0);
 
             //Prepare layer
-            var layer = GetControllerLayer(controller, layerName);
+            var layer = builder.GetControllerLayer(controller, layerName);
             layer.stateMachine.entryTransitions = null;
             layer.stateMachine.anyStateTransitions = null;
             layer.stateMachine.states = null;
-            layer.stateMachine.entryPosition = StatePosition(-1, 0);
-            layer.stateMachine.anyStatePosition = StatePosition(-1, 1);
-            layer.stateMachine.exitPosition = StatePosition(-1, 2);
+            layer.stateMachine.entryPosition = builder.StatePosition(-1, 0);
+            layer.stateMachine.anyStatePosition = builder.StatePosition(-1, 1);
+            layer.stateMachine.exitPosition = builder.StatePosition(-1, 2);
 
             //Default state
             AnimatorState defaultState = null;
@@ -166,15 +161,15 @@ namespace VRCAvatarActions
             foreach (var action in this.actions)
             {
                 //Check if valid
-                if(!action.gestureTable.IsModified())
+                if (!action.gestureTable.IsModified())
                 {
                     EditorUtility.DisplayDialog("Build Warning", $"Simple Gesture {action.name} has no selected conditions.", "Okay");
                     continue;
                 }
 
                 //Build
-                var state = layer.stateMachine.AddState(action.name, StatePosition(0, actionIter + 1));
-                state.motion = action.GetAnimation(layerType, true);
+                var state = layer.stateMachine.AddState(action.name, builder.StatePosition(0, actionIter + 1));
+                state.motion = action.GetAnimation(builder, layerType, true);
                 actionIter += 1;
 
                 //Conditions
@@ -204,14 +199,14 @@ namespace VRCAvatarActions
 
                     //Parent
                     if (parentAction != null && gesture != GestureEnum.Neutral)
-                        parentAction.AddCondition(transition, true);
+                        parentAction.AddCondition(builder, transition, true);
 
                     //Cleanup
                     unusedGestures.Remove(gesture);
                 }
 
                 //Default
-                if(action.gestureTable.neutral)
+                if (action.gestureTable.neutral)
                 {
                     defaultState = state;
                     defaultAction = action;
@@ -219,14 +214,14 @@ namespace VRCAvatarActions
             }
 
             //Default state
-            if(defaultState == null)
-                defaultState = layer.stateMachine.AddState("Neutral", StatePosition(0, 0));
+            if (defaultState == null)
+                defaultState = layer.stateMachine.AddState("Neutral", builder.StatePosition(0, 0));
             layer.stateMachine.defaultState = defaultState;
 
             //Animation Layer Weight
             var layerWeight = defaultState.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCAnimatorLayerControl>();
             layerWeight.goalWeight = 1;
-            layerWeight.layer = GetLayerIndex(controller, layer);
+            layerWeight.layer = builder.GetLayerIndex(controller, layer);
             layerWeight.blendDuration = 0;
             layerWeight.playable = VRC.SDKBase.VRC_AnimatorLayerControl.BlendableLayer.FX;
 
@@ -253,7 +248,7 @@ namespace VRCAvatarActions
                 transition.exitTime = 0;
                 transition.duration = defaultAction != null ? defaultAction.fadeIn : 0f;
 
-                parentAction.AddCondition(transition, false);
+                parentAction.AddCondition(builder, transition, false);
             }
         }
     }

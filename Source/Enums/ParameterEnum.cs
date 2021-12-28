@@ -1,5 +1,3 @@
-#if UNITY_EDITOR
-
 namespace VRCAvatarActions
 {
     public enum ParameterEnum
@@ -25,4 +23,3 @@ namespace VRCAvatarActions
         IsLocal = 7648,
     }
 }
-#endif

@@ -89,7 +89,7 @@ namespace VRCAvatarActions
         {
             //Transitions
             action.fadeIn = EditorGUILayout.FloatField("Fade In", action.fadeIn);
-            if(script.ActionsHaveExit())
+            if (script.ActionsHaveExit())
             {
                 action.hold = EditorGUILayout.FloatField("Hold", action.hold);
                 action.fadeOut = EditorGUILayout.FloatField("Fade Out", action.fadeOut);
@@ -134,7 +134,7 @@ namespace VRCAvatarActions
                                 EditorGUILayout.BeginHorizontal();
                                 {
                                     //Object Ref
-                                    if(ObjectPropertyReferece(property))
+                                    if (ObjectPropertyReferece(property))
                                     {
                                         //Clear prop data
                                         property.objects = null;
@@ -222,7 +222,7 @@ namespace VRCAvatarActions
                     }
 
                     //FX Layer
-                    if(script.CanUseLayer(BaseActions.AnimationLayer.FX))
+                    if (script.CanUseLayer(BaseActions.AnimationLayer.FX))
                     {
                         EditorGUILayout.LabelField("FX Layer");
                         EditorGUI.indentLevel += 1;
@@ -258,7 +258,7 @@ namespace VRCAvatarActions
                         EditorGUILayout.BeginHorizontal();
                         {
                             parameter.type = (BaseActions.Action.ParameterDriver.Type)EditorGUILayout.EnumPopup("Type", parameter.type);
-                            if(GUILayout.Button("X", GUILayout.Width(32)))
+                            if (GUILayout.Button("X", GUILayout.Width(32)))
                             {
                                 action.parameterDrivers.RemoveAt(i);
                                 i--;
@@ -282,13 +282,13 @@ namespace VRCAvatarActions
                             }
                             EditorGUILayout.EndHorizontal();
                         }
-                        else if(parameter.type == BaseActions.Action.ParameterDriver.Type.MenuToggle)
+                        else if (parameter.type == BaseActions.Action.ParameterDriver.Type.MenuToggle)
                         {
                             parameter.name = EditorGUILayout.TextField("Menu Action", parameter.name);
                             var value = parameter.value == 0 ? BaseActions.OnOffEnum.Off : BaseActions.OnOffEnum.On;
                             parameter.value = System.Convert.ToInt32(EditorGUILayout.EnumPopup("Value", value));
                         }
-                        else if(parameter.type == BaseActions.Action.ParameterDriver.Type.MenuRandom)
+                        else if (parameter.type == BaseActions.Action.ParameterDriver.Type.MenuRandom)
                         {
                             parameter.name = DrawParameterDropDown(parameter.name, "Parameter");
                             parameter.isZeroValid = EditorGUILayout.Toggle("Is Zero Valid", parameter.isZeroValid);
@@ -360,9 +360,9 @@ namespace VRCAvatarActions
                     {
                         EditorGUILayout.BeginHorizontal();
                         trigger.foldout = EditorGUILayout.Foldout(trigger.foldout, "Trigger");
-                        if(GUILayout.Button("Up", GUILayout.Width(48)))
+                        if (GUILayout.Button("Up", GUILayout.Width(48)))
                         {
-                            if(triggerIter > 0)
+                            if (triggerIter > 0)
                             {
                                 action.triggers.RemoveAt(triggerIter);
                                 action.triggers.Insert(triggerIter - 1, trigger);
@@ -370,7 +370,7 @@ namespace VRCAvatarActions
                         }
                         if (GUILayout.Button("Down", GUILayout.Width(48)))
                         {
-                            if (triggerIter < action.triggers.Count-1)
+                            if (triggerIter < action.triggers.Count - 1)
                             {
                                 action.triggers.RemoveAt(triggerIter);
                                 action.triggers.Insert(triggerIter + 1, trigger);
@@ -566,7 +566,7 @@ namespace VRCAvatarActions
                         //Create animation    
                         clip = new AnimationClip();
                         clip.name = newAssetName;
-                        BaseActions.SaveAsset(clip, script, "", true);
+                        ActionsBuilder.SaveAsset(clip, script, "", true);
                     }
                 }
                 EditorGUI.EndDisabledGroup();
@@ -602,10 +602,7 @@ namespace VRCAvatarActions
             EditorApplication.ExecuteMenuItem("Window/Animation/Animation");
         }
 
-        public static GameObject FindPropertyObject(GameObject root, string path)
-        {
-            return string.IsNullOrEmpty(path) ? null : (root.transform.Find(path)?.gameObject);
-        }
+        public static GameObject FindPropertyObject(GameObject root, string path) => string.IsNullOrEmpty(path) ? null : (root.transform.Find(path)?.gameObject);
 
         string FindPropertyPath(GameObject obj)
         {
@@ -621,7 +618,7 @@ namespace VRCAvatarActions
             }
             return path;
         }
-#endregion
+        #endregion
     }
 }
 #endif

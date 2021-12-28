@@ -1,8 +1,8 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
 using System.Linq;
+using UnityEditor;
+using UnityEngine;
 
 namespace VRCAvatarActions
 {
@@ -50,7 +50,7 @@ namespace VRCAvatarActions
             EditorGUILayout.EndVertical();
 
             //Warning
-            if(!VisemeAction.visimeTable.IsModified())
+            if (!VisemeAction.visimeTable.IsModified())
             {
                 EditorGUILayout.HelpBox("No conditions currently selected.", MessageType.Warning);
             }

@@ -3,7 +3,7 @@ namespace VRCAvatarActions
 {
     public abstract class NonMenuActions : BaseActions
     {
-        public abstract void Build(MenuActions.MenuAction parentAction);
+        public abstract void Build(ActionsBuilder builder, MenuActions.MenuAction parentAction);
     }
 }
 #endif

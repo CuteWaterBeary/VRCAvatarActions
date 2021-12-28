@@ -1,5 +1,3 @@
-#if UNITY_EDITOR
-
 namespace VRCAvatarActions
 {
     public enum VisemeEnum
@@ -21,4 +19,3 @@ namespace VRCAvatarActions
         U
     }
 }
-#endif

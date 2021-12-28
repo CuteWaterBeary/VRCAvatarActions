@@ -12,11 +12,6 @@ namespace VRCAvatarActions
         [System.Serializable]
         public class Action
         {
-            //Simple Data
-            public bool enabled = true;
-            public string name;
-
-            //Animations
             [System.Serializable]
             public class Animations
             {
@@ -24,57 +19,7 @@ namespace VRCAvatarActions
                 public AnimationClip enter;
                 public AnimationClip exit;
             }
-            public Animations actionLayerAnimations = new Animations();
-            public Animations fxLayerAnimations = new Animations();
-            public float fadeIn = 0;
-            public float hold = 0;
-            public float fadeOut = 0;
 
-            public bool HasAnimations()
-            {
-                return actionLayerAnimations.enter != null || actionLayerAnimations.exit || fxLayerAnimations.enter != null || fxLayerAnimations.exit;
-            }
-            public bool AffectsAnyLayer()
-            {
-                bool result = false;
-                result |= AffectsLayer(AnimationLayer.Action);
-                result |= AffectsLayer(AnimationLayer.FX);
-                return result;
-            }
-            public bool AffectsLayer(AnimationLayer layerType)
-            {
-                if (GetAnimationRaw(layerType, true) != null)
-                    return true;
-                if (GeneratesLayer(layerType))
-                    return true;
-                return false;
-            }
-            public bool GeneratesLayer(AnimationLayer layerType)
-            {
-                if (layerType == AnimationLayer.FX)
-                {
-                    if (objectProperties.Count > 0)
-                        return true;
-                    if (parameterDrivers.Count > 0)
-                        return true;
-                }
-                return false;
-            }
-            public virtual bool HasExit()
-            {
-                return true;
-            }
-            public virtual bool ShouldBuild()
-            {
-                if (!enabled)
-                    return false;
-                return true;
-            }
-
-            //Object Properties
-            public List<ObjectProperty> objectProperties = new List<ObjectProperty>();
-
-            //Drive Parameters
             [System.Serializable]
             public class ParameterDriver
             {
@@ -83,14 +28,6 @@ namespace VRCAvatarActions
                     RawValue = 4461,
                     MenuToggle = 3632,
                     MenuRandom = 9065,
-                }
-
-                public ParameterDriver() { }
-                public ParameterDriver(ParameterDriver source)
-                {
-                    type = source.type;
-                    name = source.name;
-                    value = source.value;
                 }
 
                 public Type type = Type.RawValue;
@@ -102,16 +39,30 @@ namespace VRCAvatarActions
                 public float valueMax = 1;
                 public float chance = 0.5f;
                 public bool isZeroValid = true;
-            }
-            public List<ParameterDriver> parameterDrivers = new List<ParameterDriver>();
 
-            //Triggers
+                public ParameterDriver() {}
+                public ParameterDriver(ParameterDriver source)
+                {
+                    type = source.type;
+                    name = source.name;
+                    value = source.value;
+                }
+            }
+
             [System.Serializable]
             public class Trigger
             {
-                public Trigger()
+                public enum Type
                 {
+                    Enter = 0,
+                    Exit = 1,
                 }
+
+                public Type type;
+                public List<Condition> conditions = new List<Condition>();
+                public bool foldout;
+
+                public Trigger() {}
                 public Trigger(Trigger source)
                 {
                     type = source.type;
@@ -119,22 +70,40 @@ namespace VRCAvatarActions
                     foreach (var item in source.conditions)
                         conditions.Add(new Condition(item));
                 }
-                public enum Type
-                {
-                    Enter = 0,
-                    Exit = 1,
-                }
-                public Type type;
-                public List<Condition> conditions = new List<Condition>();
-                public bool foldout;
             }
 
             [System.Serializable]
             public class Condition
             {
-                public Condition()
+                public enum Logic
                 {
+                    Equals = 0,
+                    NotEquals = 1,
+                    GreaterThen = 2,
+                    LessThen = 3,
                 }
+
+                public enum LogicEquals
+                {
+                    Equals = 0,
+                    NotEquals = 1,
+                }
+
+                public enum LogicCompare
+                {
+                    GreaterThen = 2,
+                    LessThen = 3,
+                }
+
+                public ParameterEnum type;
+                public string parameter;
+                public Logic logic = Logic.Equals;
+                public float value = 1;
+                public bool shared = false;
+
+                public string GetParameter() => type == ParameterEnum.Custom ? parameter : type.ToString();
+
+                public Condition() {}
                 public Condition(Condition source)
                 {
                     type = source.type;
@@ -143,39 +112,7 @@ namespace VRCAvatarActions
                     value = source.value;
                     shared = source.shared;
                 }
-                public enum Logic
-                {
-                    Equals = 0,
-                    NotEquals = 1,
-                    GreaterThen = 2,
-                    LessThen = 3,
-                }
-                public enum LogicEquals
-                {
-                    Equals = 0,
-                    NotEquals = 1,
-                }
-                public enum LogicCompare
-                {
-                    GreaterThen = 2,
-                    LessThen = 3,
-                }
-
-                public string GetParameter()
-                {
-                    if (type == ParameterEnum.Custom)
-                        return parameter;
-                    else
-                        return type.ToString();
-                }
-
-                public ParameterEnum type;
-                public string parameter;
-                public Logic logic = Logic.Equals;
-                public float value = 1;
-                public bool shared = false;
             }
-            public List<Trigger> triggers = new List<Trigger>();
 
             [System.Serializable]
             public struct BodyOverride
@@ -204,6 +141,7 @@ namespace VRCAvatarActions
                     eyes = source.eyes;
                     mouth = source.mouth;
                 }
+
                 public void SetAll(bool value)
                 {
                     head = value;
@@ -217,33 +155,51 @@ namespace VRCAvatarActions
                     eyes = value;
                     mouth = value;
                 }
-                public bool GetAll()
-                {
-                    return
-                        head &&
-                        leftHand &&
-                        rightHand &&
-                        hip &&
-                        leftFoot &&
-                        rightFoot &&
-                        leftFingers &&
-                        rightFingers &&
-                        eyes &&
-                        mouth;
-                }
-                public bool HasAny()
-                {
-                    return head || leftHand || rightHand || hip || leftFoot || rightFoot || leftFingers || rightFingers || eyes || mouth;
-                }
+
+                public bool GetAll() => head && leftHand && rightHand && hip && leftFoot && rightFoot && leftFingers && rightFingers && eyes && mouth;
+                public bool HasAny() => head || leftHand || rightHand || hip || leftFoot || rightFoot || leftFingers || rightFingers || eyes || mouth;
             }
+
+            // END OF CLASSES AND STRUCTS
+
+            //Simple Data
+            public bool enabled = true;
+            public string name;
+
+            //Animations
+            public Animations actionLayerAnimations = new Animations();
+            public Animations fxLayerAnimations = new Animations();
+            public float fadeIn = 0;
+            public float hold = 0;
+            public float fadeOut = 0;
+
+            public List<ObjectProperty> objectProperties = new List<ObjectProperty>();
+            public List<ParameterDriver> parameterDrivers = new List<ParameterDriver>();
+            public List<Trigger> triggers = new List<Trigger>();
+
             public BodyOverride bodyOverride = new BodyOverride();
 
-            //Build
-            public virtual string GetLayerGroup()
+
+            public bool HasAnimations() => actionLayerAnimations.enter != null || actionLayerAnimations.exit || fxLayerAnimations.enter != null || fxLayerAnimations.exit;
+
+            public bool AffectsAnyLayer()
             {
-                return null;
+                bool result = false;
+                result |= AffectsLayer(AnimationLayer.Action);
+                result |= AffectsLayer(AnimationLayer.FX);
+                return result;
             }
-            public void AddTransitions(AnimatorController controller, AnimatorState lastState, AnimatorState state, float transitionTime, Trigger.Type triggerType, MenuActions.MenuAction parentAction)
+
+            public bool AffectsLayer(AnimationLayer layerType) => GetAnimationRaw(layerType, true) != null || GeneratesLayer(layerType);
+            public bool GeneratesLayer(AnimationLayer layerType) => layerType == AnimationLayer.FX && (objectProperties.Count > 0 || parameterDrivers.Count > 0);
+
+            public virtual bool HasExit() => true;
+            public virtual bool ShouldBuild() => enabled;
+
+            //Build
+            public virtual string GetLayerGroup() => null;
+
+            public void AddTransitions(ActionsBuilder builder, AnimatorController controller, AnimatorState lastState, AnimatorState state, float transitionTime, Trigger.Type triggerType, MenuActions.MenuAction parentAction)
             {
                 //Find valid triggers
                 List<Trigger> triggers = new List<Trigger>();
@@ -269,14 +225,14 @@ namespace VRCAvatarActions
                         var transition = lastState.AddTransition(state);
                         transition.hasExitTime = false;
                         transition.duration = transitionTime;
-                        AddCondition(transition, controlEquals);
+                        AddCondition(builder, transition, controlEquals);
 
                         //Conditions
-                        AddTriggerConditions(controller, transition, trigger.conditions);
+                        builder.AddTriggerConditions(controller, transition, trigger.conditions);
 
                         //Parent Conditions - Enter
                         if (triggerType == Trigger.Type.Enter && parentAction != null)
-                            parentAction.AddCondition(transition, controlEquals);
+                            parentAction.AddCondition(builder, transition, controlEquals);
 
                         //Finalize
                         Finalize(transition);
@@ -290,11 +246,11 @@ namespace VRCAvatarActions
                         var transition = lastState.AddTransition(state);
                         transition.hasExitTime = false;
                         transition.duration = transitionTime;
-                        AddCondition(transition, controlEquals);
+                        AddCondition(builder, transition, controlEquals);
 
                         //Parent Conditions
                         if (parentAction != null)
-                            parentAction.AddCondition(transition, controlEquals);
+                            parentAction.AddCondition(builder, transition, controlEquals);
 
                         //Finalize
                         Finalize(transition);
@@ -305,7 +261,7 @@ namespace VRCAvatarActions
                         var transition = lastState.AddTransition(state);
                         transition.hasExitTime = false;
                         transition.duration = transitionTime;
-                        AddCondition(transition, controlEquals);
+                        AddCondition(builder, transition, controlEquals);
 
                         //Finalize
                         Finalize(transition);
@@ -318,7 +274,7 @@ namespace VRCAvatarActions
                     var transition = lastState.AddTransition(state);
                     transition.hasExitTime = false;
                     transition.duration = transitionTime;
-                    parentAction.AddCondition(transition, controlEquals);
+                    parentAction.AddCondition(builder, transition, controlEquals);
                 }
 
                 void Finalize(AnimatorStateTransition transition)
@@ -327,7 +283,8 @@ namespace VRCAvatarActions
                         transition.AddCondition(AnimatorConditionMode.If, 1, "True");
                 }
             }
-            public virtual void AddCondition(AnimatorStateTransition transition, bool equals)
+
+            public virtual void AddCondition(ActionsBuilder builder, AnimatorStateTransition transition, bool equals)
             {
                 //Nothing
             }
@@ -344,7 +301,7 @@ namespace VRCAvatarActions
             AnimationClip GetAnimationRaw(AnimationLayer layer, bool enter = true)
             {
                 //Find layer group
-                Action.Animations group;
+                Animations group;
                 if (layer == AnimationLayer.Action)
                     group = actionLayerAnimations;
                 else if (layer == AnimationLayer.FX)
@@ -359,7 +316,8 @@ namespace VRCAvatarActions
                     return group.exit != null ? group.exit : group.enter;
                 }
             }
-            public AnimationClip GetAnimation(AnimationLayer layer, bool enter = true)
+
+            public AnimationClip GetAnimation(ActionsBuilder builder, AnimationLayer layer, bool enter = true)
             {
                 //Find layer group
                 Animations group;
@@ -377,10 +335,11 @@ namespace VRCAvatarActions
                 {
                     //Find/Generate
                     if (GeneratesLayer(layer))
-                        return FindOrGenerate(name + "_Generated", group.enter);
+                        return FindOrGenerate(builder, name + "_Generated", group.enter);
                     else
                         return group.enter;
                 }
+
                 AnimationClip GetExit()
                 {
                     //Fallback to enter
@@ -389,30 +348,32 @@ namespace VRCAvatarActions
 
                     //Find/Generate
                     if (GeneratesLayer(layer))
-                        return FindOrGenerate(name + "_Generated_Exit", group.exit);
+                        return FindOrGenerate(builder, name + "_Generated_Exit", group.exit);
                     else
                         return group.exit;
                 }
             }
-            protected AnimationClip FindOrGenerate(string clipName, AnimationClip parentClip)
+
+            protected AnimationClip FindOrGenerate(ActionsBuilder builder, string clipName, AnimationClip parentClip)
             {
                 //Find/Generate
-                if (GeneratedClips.TryGetValue(clipName, out AnimationClip generated))
+                if (builder.GeneratedClips.TryGetValue(clipName, out AnimationClip generated))
                     return generated;
                 else
                 {
                     //Generate
-                    generated = BuildGeneratedAnimation(clipName, parentClip);
+                    generated = BuildGeneratedAnimation(builder, clipName, parentClip);
                     if (generated != null)
                     {
-                        GeneratedClips.Add(clipName, generated);
+                        builder.GeneratedClips.Add(clipName, generated);
                         return generated;
                     }
                     else
                         return parentClip;
                 }
             }
-            protected AnimationClip BuildGeneratedAnimation(string clipName, AnimationClip source)
+
+            protected AnimationClip BuildGeneratedAnimation(ActionsBuilder builder, string clipName, AnimationClip source)
             {
                 try
                 {
@@ -434,7 +395,7 @@ namespace VRCAvatarActions
                             continue;
 
                         //Find object
-                        item.objRef = BaseActionsEditor.FindPropertyObject(AvatarDescriptor.gameObject, item.path);
+                        item.objRef = BaseActionsEditor.FindPropertyObject(builder.AvatarDescriptor.gameObject, item.path);
                         if (item.objRef == null)
                             continue;
 
@@ -449,12 +410,12 @@ namespace VRCAvatarActions
 
                     //Save
                     animation.name = clipName;
-                    SaveAsset(animation, ActionsDescriptor.ReturnAnyScriptableObject(), "Generated");
+                    builder.BuildFailed = !ActionsBuilder.SaveAsset(animation, builder.ActionsDescriptor.ReturnAnyScriptableObject(), "Generated");
 
                     //Return
                     return animation;
                 }
-                catch(System.Exception e)
+                catch (System.Exception e)
                 {
                     Debug.LogException(e);
                     Debug.LogError($"Error while trying to generate animation '{clipName}'");

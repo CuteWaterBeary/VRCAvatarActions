@@ -21,12 +21,13 @@ namespace VRCAvatarActions
             menuScript = target as MenuActions;
 
             int actionCount = 0;
-            foreach(var action in menuScript.actions)
+            foreach (var action in menuScript.actions)
             {
                 if (action.ShouldBuild())
                     actionCount += 1;
             }
-            if(actionCount > ExpressionsMenu.MAX_CONTROLS)
+
+            if (actionCount > ExpressionsMenu.MAX_CONTROLS)
             {
                 EditorGUILayout.HelpBox($"Too many actions are defined, disable or delete until there are only {ExpressionsMenu.MAX_CONTROLS}", MessageType.Error);
             }
@@ -75,7 +76,7 @@ namespace VRCAvatarActions
             //Parameter
             action.parameter = DrawParameterDropDown(action.parameter, "Parameter");
 
-            if(action.menuType == MenuActions.MenuAction.MenuType.Toggle)
+            if (action.menuType == MenuActions.MenuAction.MenuType.Toggle)
             {
                 string tooltip = "This action will be used when no other toggle with the same parameter is turned on.\n\nOnly one action can be marked as the off state for a parameter name.";
                 action.isOffState = EditorGUILayout.Toggle(new GUIContent("Is Off State", tooltip), action.isOffState);
@@ -123,7 +124,7 @@ namespace VRCAvatarActions
                 //Create
                 var subMenu = CreateInstance<MenuActions>();
                 subMenu.name = $"Menu {action.name}";
-                BaseActions.SaveAsset(subMenu, script, null, true);
+                ActionsBuilder.SaveAsset(subMenu, script, null, true);
 
                 //Set
                 action.subMenu = subMenu;

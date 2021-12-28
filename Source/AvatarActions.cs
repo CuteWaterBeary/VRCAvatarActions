@@ -22,7 +22,7 @@ namespace VRCAvatarActions
         public List<string> ignoreParameters = new List<string>();
         public List<ParamDefault> parameterDefaults = new List<ParamDefault>();
 
-        [System.Serializable]
+        [Serializable]
         public struct ParamDefault
         {
             public string name;
@@ -43,7 +43,7 @@ namespace VRCAvatarActions
         {
             if (menuActions != null)
                 return menuActions;
-            foreach(var action in otherActions)
+            foreach (var action in otherActions)
             {
                 if (action != null)
                     return action;
@@ -53,7 +53,7 @@ namespace VRCAvatarActions
 
         public void Awake()
         {
-            if(GetComponent<VRCAvatarDescriptor>() != null)
+            if (GetComponent<VRCAvatarDescriptor>() != null)
             {
                 EditorUtility.DisplayDialog("Error", "You are unable to add this script directly to an avatar. Please place this on a blank game object in the scene.", "Okay");
                 GameObject.DestroyImmediate(this);

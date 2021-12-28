@@ -21,7 +21,7 @@ namespace VRCAvatarActions
             {
                 Inspector_Body();
             }
-            if(EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck())
             {
                 EditorUtility.SetDirty(target);
             }
@@ -129,7 +129,8 @@ namespace VRCAvatarActions
             EditorGUI.BeginDisabledGroup(script.ReturnAnyScriptableObject() == null || script.avatarDescriptor == null);
             if (GUILayout.Button("Build Avatar Data", GUILayout.Height(32)))
             {
-                BaseActions.BuildAvatarData(script.avatarDescriptor, script);
+                ActionsBuilder builder = new ActionsBuilder();
+                builder.BuildAvatarData(script.avatarDescriptor, script);
             }
             EditorGUI.EndDisabledGroup();
 

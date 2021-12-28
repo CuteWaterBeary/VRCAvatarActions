@@ -1,17 +1,15 @@
-﻿using System.Collections.Generic;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
-using VRC.SDK3.Avatars.Components;
 using AvatarDescriptor = VRC.SDK3.Avatars.Components.VRCAvatarDescriptor;
 using ExpressionParameters = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters;
-using ExpressionsMenu = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu;
 
 #if UNITY_EDITOR
 namespace VRCAvatarActions
 {
     public class EditorBase : Editor
     {
+        protected const float SmallButtonSize = 48f;
+
         public AvatarDescriptor avatarDescriptor;
 
         public bool isSubInspector = false;
@@ -46,17 +44,19 @@ namespace VRCAvatarActions
                     Inspector_Body();
                 }
 
-                if(EditorGUI.EndChangeCheck())
+                if (EditorGUI.EndChangeCheck())
                     EditorUtility.SetDirty(target);
             }
+
             if (EditorGUI.EndChangeCheck())
             {
                 EditorUtility.SetDirty(target);
             }
         }
+
         void SelectAvatarDescriptor()
         {
-            var descriptors = GameObject.FindObjectsOfType<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>();
+            var descriptors = FindObjectsOfType<AvatarDescriptor>();
             if (descriptors.Length > 0)
             {
                 //Compile list of names
@@ -75,7 +75,8 @@ namespace VRCAvatarActions
             else
                 SelectAvatarDescriptor(null);
         }
-        void SelectAvatarDescriptor(VRC.SDK3.Avatars.Components.VRCAvatarDescriptor desc)
+
+        void SelectAvatarDescriptor(AvatarDescriptor desc)
         {
             if (desc == avatarDescriptor)
                 return;
@@ -103,17 +104,10 @@ namespace VRCAvatarActions
             }
         }
 
-        public virtual void Inspector_Header()
-        {
-        }
+        public virtual void Inspector_Header() { }
+        public virtual void Inspector_Body() { }
 
-        public virtual void Inspector_Body()
-        {
-        }
-
-        protected const float SmallButtonSize = 48f;
-
-#region Parameters
+        #region Parameters
         protected static string[] ParameterNames =
         {
             "[None]",
@@ -135,7 +129,7 @@ namespace VRCAvatarActions
             "Stage16",
         };
 
-        public static string DrawParameterDropDown(string parameter, string label, bool required, VRCAvatarDescriptor avatarDescriptor)
+        public static string DrawParameterDropDown(string parameter, string label, bool required, AvatarDescriptor avatarDescriptor)
         {
             EditorGUILayout.BeginHorizontal();
             {
@@ -196,10 +190,7 @@ namespace VRCAvatarActions
             return parameter;
         }
 
-        protected string DrawParameterDropDown(string parameter, string label, bool required=true)
-        {
-            return DrawParameterDropDown(parameter, label, required, avatarDescriptor);
-        }
+        protected string DrawParameterDropDown(string parameter, string label, bool required = true) => DrawParameterDropDown(parameter, label, required, avatarDescriptor);
 
         protected int GetExpressionParametersCount()
         {
@@ -208,15 +199,10 @@ namespace VRCAvatarActions
             return 0;
         }
 
-        protected ExpressionParameters.Parameter GetExpressionParameter(int i)
-        {
-            if (avatarDescriptor != null)
-                return avatarDescriptor.GetExpressionParameter(i);
-            return null;
-        }
-#endregion
+        protected ExpressionParameters.Parameter GetExpressionParameter(int i) => avatarDescriptor != null ? avatarDescriptor.GetExpressionParameter(i) : null;
+        #endregion
 
-#region Styles
+        #region Styles
         protected GUIStyle boxUnselected;
         protected GUIStyle boxSelected;
         protected GUIStyle boxDisabled;
@@ -237,13 +223,10 @@ namespace VRCAvatarActions
                 boxDisabled.normal.background = MakeTex(2, 2, new Color(0f, 0f, 0f, 0.25f));
             }
         }
-#endregion
+        #endregion
 
-#region Helper Methods
-		public static void Divider()
-        {
-            EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
-        }
+        #region Helper Methods
+        public static void Divider() => EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
 
         public static Texture2D MakeTex(int width, int height, Color col)
         {
@@ -257,7 +240,7 @@ namespace VRCAvatarActions
             result.Apply();
             return result;
         }
-#endregion
-	}
+        #endregion
+    }
 }
 #endif

@@ -1,5 +1,3 @@
-#if UNITY_EDITOR
-
 namespace VRCAvatarActions
 {
     public enum GestureEnum
@@ -14,4 +12,3 @@ namespace VRCAvatarActions
         ThumbsUp,
     }
 }
-#endif

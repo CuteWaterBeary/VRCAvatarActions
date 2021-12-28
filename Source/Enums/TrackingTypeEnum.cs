@@ -1,5 +1,3 @@
-#if UNITY_EDITOR
-
 namespace VRCAvatarActions
 {
     public enum TrackingTypeEnum
@@ -10,4 +8,3 @@ namespace VRCAvatarActions
         FullBody = 6,
     }
 }
-#endif

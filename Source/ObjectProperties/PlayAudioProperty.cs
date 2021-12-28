@@ -51,7 +51,7 @@ namespace VRCAvatarActions
 
             //Find/Create component
             var audioSource = child.GetComponent<AudioSource>();
-            if(audioSource == null)
+            if (audioSource == null)
                 audioSource = child.AddComponent<AudioSource>();
             audioSource.clip = AudioClip;
             audioSource.volume = 0f; //Audio 0 by default

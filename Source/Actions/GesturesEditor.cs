@@ -22,6 +22,7 @@ namespace VRCAvatarActions
             }
             EditorGUILayout.EndVertical();
         }
+
         public override void Inspector_Action_Header(BaseActions.Action action)
         {
             var gestureAction = (Gestures.GestureAction)action;
@@ -55,11 +56,12 @@ namespace VRCAvatarActions
             EditorGUILayout.EndVertical();
 
             //Warning
-            if(!gestureAction.gestureTable.IsModified())
+            if (!gestureAction.gestureTable.IsModified())
             {
                 EditorGUILayout.HelpBox("No conditions currently selected.", MessageType.Warning);
             }
         }
+
         bool CheckGestureTypeUsed(GestureEnum type)
         {
             foreach (var action in gestureScript.actions)

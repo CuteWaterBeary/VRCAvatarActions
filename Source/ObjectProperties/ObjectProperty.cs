@@ -1,6 +1,6 @@
 ﻿#if UNITY_EDITOR
-using UnityEngine;
 using System.Linq;
+using UnityEngine;
 
 namespace VRCAvatarActions
 {
@@ -27,9 +27,7 @@ namespace VRCAvatarActions
         //Meta-data
         public GameObject objRef;
 
-        public ObjectProperty()
-        {
-        }
+        public ObjectProperty() { }
 
         public ObjectProperty(ObjectProperty source)
         {
@@ -54,13 +52,13 @@ namespace VRCAvatarActions
         {
             public ObjectProperty prop;
 
+            public string Path => prop.path;
+            public GameObject ObjRef => prop.objRef;
+
             public PropertyWrapper(ObjectProperty property)
             {
                 prop = property;
             }
-
-            public string Path => prop.path;
-            public GameObject ObjRef => prop.objRef;
 
             public abstract void AddKeyframes(AnimationClip animation);
         }
