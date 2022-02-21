@@ -14,7 +14,9 @@ namespace VRCAvatarActions
             prop.objects = null;
         }
 
-        public override void AddKeyframes(AnimationClip animation)
+        public override bool ShouldGenerate(bool enter) => enter;
+
+        public override void AddKeyframes(ActionsBuilder builder, BaseActions.Action action, AnimationClip animation, bool enter)
         {
             //For each material
             for (int i = 0; i < prop.objects.Length; i++)
@@ -32,6 +34,11 @@ namespace VRCAvatarActions
                 EditorCurveBinding binding = EditorCurveBinding.PPtrCurve(Path, typeof(Renderer), $"m_Materials.Array.data[{i}]");
                 AnimationUtility.SetObjectReferenceCurve(animation, binding, keyframes);
             }
+        }
+
+        public override void SetState(ActionsBuilder builder, BaseActions.Action action)
+        {
+            // Euan: To make this work we need to modify this so we swap what the saved materials here are otherwise we can't switch back
         }
 
         public override void OnGUI(BaseActions context)

@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -191,7 +192,10 @@ namespace VRCAvatarActions
             }
 
             public bool AffectsLayer(AnimationLayer layerType) => GetAnimationRaw(layerType, true) != null || GeneratesLayer(layerType);
-            public bool GeneratesLayer(AnimationLayer layerType) => layerType == AnimationLayer.FX && (objectProperties.Count > 0 || parameterDrivers.Count > 0);
+            public bool GeneratesLayer(AnimationLayer layerType, bool enter = true)
+            {
+                return layerType == AnimationLayer.FX && (objectProperties.Any(p => p.ToWrapper().ShouldGenerate(enter)) || parameterDrivers.Count > 0);
+            }
 
             public virtual bool HasExit() => true;
             public virtual bool ShouldBuild() => enabled;
@@ -312,9 +316,7 @@ namespace VRCAvatarActions
                 if (enter)
                     return group.enter;
                 else
-                {
                     return group.exit != null ? group.exit : group.enter;
-                }
             }
 
             public AnimationClip GetAnimation(ActionsBuilder builder, AnimationLayer layer, bool enter = true)
@@ -328,41 +330,35 @@ namespace VRCAvatarActions
                 else
                     return null;
 
-                //Return
-                return enter ? GetEnter() : GetExit();
+                AnimationClip clip = GetClip(enter);
 
-                AnimationClip GetEnter()
+                if (enter == false && clip == null)
                 {
-                    //Find/Generate
-                    if (GeneratesLayer(layer))
-                        return FindOrGenerate(builder, name + "_Generated", group.enter);
-                    else
-                        return group.enter;
+                    clip = GetClip(true);
                 }
 
-                AnimationClip GetExit()
+                AnimationClip GetClip(bool useEnter)
                 {
-                    //Fallback to enter
-                    if (group.exit == null)
-                        return GetEnter();
+                    AnimationClip animationClip = enter ? group.enter : group.exit;
 
                     //Find/Generate
-                    if (GeneratesLayer(layer))
-                        return FindOrGenerate(builder, name + "_Generated_Exit", group.exit);
-                    else
-                        return group.exit;
+                    return GeneratesLayer(layer, useEnter) ? FindOrGenerate(builder, $"{name}_Generated{(useEnter ? "" : "_Exit")}", animationClip, useEnter) : animationClip;
                 }
+
+                return clip;
             }
 
-            protected AnimationClip FindOrGenerate(ActionsBuilder builder, string clipName, AnimationClip parentClip)
+            protected AnimationClip FindOrGenerate(ActionsBuilder builder, string clipName, AnimationClip parentClip, bool enter)
             {
                 //Find/Generate
                 if (builder.GeneratedClips.TryGetValue(clipName, out AnimationClip generated))
+                {
                     return generated;
+                }
                 else
                 {
                     //Generate
-                    generated = BuildGeneratedAnimation(builder, clipName, parentClip);
+                    generated = BuildGeneratedAnimation(builder, clipName, parentClip, enter);
                     if (generated != null)
                     {
                         builder.GeneratedClips.Add(clipName, generated);
@@ -373,19 +369,16 @@ namespace VRCAvatarActions
                 }
             }
 
-            protected AnimationClip BuildGeneratedAnimation(ActionsBuilder builder, string clipName, AnimationClip source)
+            protected AnimationClip BuildGeneratedAnimation(ActionsBuilder builder, string clipName, AnimationClip source, bool enter)
             {
                 try
                 {
                     //Create new animation
-                    AnimationClip animation = null;
+                    AnimationClip animation = new AnimationClip();
                     if (source != null)
                     {
-                        animation = new AnimationClip();
                         EditorUtility.CopySerialized(source, animation);
                     }
-                    else
-                        animation = new AnimationClip();
 
                     //Properties
                     foreach (var item in objectProperties)
@@ -399,7 +392,7 @@ namespace VRCAvatarActions
                         if (item.objRef == null)
                             continue;
 
-                        item.ToWrapper().AddKeyframes(animation);
+                        item.ToWrapper().AddKeyframes(builder, this, animation, enter);
                     }
 
                     //Save
@@ -414,6 +407,23 @@ namespace VRCAvatarActions
                     Debug.LogException(e);
                     Debug.LogError($"Error while trying to generate animation '{clipName}'");
                     return null;
+                }
+            }
+
+            public void SetState(ActionsBuilder builder)
+            {
+                foreach (var item in objectProperties)
+                {
+                    //Is anything defined?
+                    if (string.IsNullOrEmpty(item.path))
+                        continue;
+
+                    //Find object
+                    item.objRef = BaseActionsEditor.FindPropertyObject(builder.AvatarDescriptor.gameObject, item.path);
+                    if (item.objRef == null)
+                        continue;
+
+                    item.ToWrapper().SetState(builder, this);
                 }
             }
 

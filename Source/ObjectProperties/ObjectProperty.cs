@@ -72,7 +72,11 @@ namespace VRCAvatarActions
                 prop = property;
             }
 
-            public abstract void AddKeyframes(AnimationClip animation);
+            public abstract bool ShouldGenerate(bool enter);
+
+            public abstract void AddKeyframes(ActionsBuilder builder, BaseActions.Action action, AnimationClip animation, bool enter);
+
+            public abstract void SetState(ActionsBuilder builder, BaseActions.Action action);
 
             public abstract void OnGUI(BaseActions context);
         }

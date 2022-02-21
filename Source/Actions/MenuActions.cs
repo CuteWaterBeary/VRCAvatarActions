@@ -165,6 +165,23 @@ namespace VRCAvatarActions
             //Sub Actions
             builder.BuildSubActionLayers(validActions, AnimationLayer.Action);
             builder.BuildSubActionLayers(validActions, AnimationLayer.FX);
+
+            //States
+            builder.SetActionStates(validActions);
+        }
+
+        public virtual void SetState(ActionsBuilder builder, string parameter)
+        {
+            //Collect all menu actions
+            var validActions = new List<MenuAction>();
+            CollectValidMenuActions(builder, validActions);
+
+            validActions.RemoveAll((action) => { return action.parameter != parameter; });
+
+            foreach (var action in validActions)
+            {
+                action.SetState(builder);
+            }
         }
 
         void CollectValidMenuActions(ActionsBuilder builder, List<MenuAction> output)

@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using UnityEditor;
 using UnityEngine;
 using static VRCAvatarActions.ObjectProperty;
 
@@ -17,22 +18,37 @@ namespace VRCAvatarActions
 
         public bool DesiredState { get => prop.values[0] != 0f; set => prop.values[0] = value ? 1f : 0f; }
 
-        public override void AddKeyframes(AnimationClip animation)
+        public override bool ShouldGenerate(bool enter) => true;
+
+        public override void AddKeyframes(ActionsBuilder builder, BaseActions.Action action, AnimationClip animation, bool enter)
         {
-            bool defaultstate = ObjRef.activeSelf;
+            if (DesiredState == false)
+            {
+                enter = !enter;
+            }
 
-            //Create curve
             var curve = new AnimationCurve();
-            curve.AddKey(new Keyframe(0f, defaultstate ? 0f : 1f));
+            curve.AddKey(new Keyframe(0f, enter ? 1f : 0f));
             animation.SetCurve(Path, typeof(GameObject), "m_IsActive", curve);
+        }
 
-            //Disable the object
-            // obj.SetActive(defaultstate);
+        public override void SetState(ActionsBuilder builder, BaseActions.Action action)
+        {
+            bool defaultstate = builder.GetExpressionParameterDefaultState(action) == 1f;
+
+            if (DesiredState == false)
+            {
+                defaultstate = !defaultstate;
+            }
+
+            ObjRef.SetActive(defaultstate);
         }
 
         public override void OnGUI(BaseActions context)
         {
-            
+            Setup();
+
+            DesiredState = EditorGUILayout.Toggle("Enable", DesiredState);
         }
     }
 }

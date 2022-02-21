@@ -24,7 +24,9 @@ namespace VRCAvatarActions
 
         public float Weight { get => prop.values[1]; set => prop.values[1] = value; }
 
-        public override void AddKeyframes(AnimationClip animation)
+        public override bool ShouldGenerate(bool enter) => enter;
+
+        public override void AddKeyframes(ActionsBuilder builder, BaseActions.Action action, AnimationClip animation, bool enter)
         {
             try
             {
@@ -45,6 +47,11 @@ namespace VRCAvatarActions
             var curve = new AnimationCurve();
             curve.AddKey(new Keyframe(0f, Weight));
             animation.SetCurve(Path, typeof(SkinnedMeshRenderer), $"blendShape.{Name}", curve);
+        }
+
+        public override void SetState(ActionsBuilder builder, BaseActions.Action action)
+        {
+            
         }
 
         public override void OnGUI(BaseActions context)

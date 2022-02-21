@@ -95,15 +95,10 @@ namespace VRCAvatarActions
             //Expression Parameter Settings
             EditorGUILayout.BeginVertical(GUI.skin.box);
             EditorGUI.indentLevel += 1;
-            {
-                EditorGUILayout.BeginHorizontal();
-                script.expressionParametersStorage = (ExpressionParameters)EditorGUILayout.ObjectField("Expression Parameter Settings", script.expressionParametersStorage, typeof(ExpressionParameters), false);
-                EditorGUILayout.EndHorizontal();
-            }
-
             script.foldoutParameterSettings = EditorGUILayout.Foldout(script.foldoutParameterSettings, "Parameter Settings");
             EditorGUI.indentLevel -= 1;
-            if (script.foldoutParameterSettings && script.expressionParametersStorage != null)
+
+            if (script.foldoutParameterSettings)
             {
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
@@ -116,9 +111,16 @@ namespace VRCAvatarActions
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
 
-                foreach (var parameter in script.expressionParametersStorage.parameters)
+                for (int i = 0; i < script.parameterDefaults.Count; i++)
                 {
-                    DrawExpressionParameter(parameter, script.avatarDescriptor.expressionParameters.FindParameter(parameter.name) != null);
+                    AvatarActions.ParameterDefault parameter = script.parameterDefaults[i];
+                    parameter.enabled = script.avatarDescriptor.expressionParameters.FindParameter(parameter.name) != null;
+                }
+                script.parameterDefaults.Sort((a, b) => b.enabled == a.enabled ? a.name.CompareTo(b.name) : b.enabled.CompareTo(a.enabled));
+
+                foreach (var parameter in script.parameterDefaults.ToArray())
+                {
+                    DrawExpressionParameter(parameter);
                 }
             }
             EditorGUILayout.EndVertical();
@@ -175,43 +177,6 @@ namespace VRCAvatarActions
                         }
                         EditorGUI.indentLevel -= 1;
                     }
-
-                    //Parameter Defaults
-                    // {
-                    //     EditorGUI.indentLevel += 1;
-                    //     script.foldoutParameterDefaults = EditorGUILayout.Foldout(script.foldoutParameterDefaults, BaseActionsEditor.Title("Paramater Defaults", script.parameterDefaults.Count > 0));
-                    //     if (script.foldoutParameterDefaults)
-                    //     {
-                    //         //Add
-                    //         GUILayout.BeginHorizontal();
-                    //         GUILayout.Space(EditorGUI.indentLevel * 10);
-                    //         if (GUILayout.Button("Add"))
-                    //         {
-                    //             script.parameterDefaults.Add(new AvatarActions.ParamDefault());
-                    //         }
-                    //         GUILayout.EndHorizontal();
-
-                    //         //Layers
-                    //         for (int i = 0; i < script.parameterDefaults.Count; i++)
-                    //         {
-                    //             var value = script.parameterDefaults[i];
-
-                    //             EditorGUILayout.BeginHorizontal();
-                    //             value.name = EditorGUILayout.TextField(value.name);
-                    //             value.value = EditorGUILayout.FloatField(value.value);
-
-                    //             script.parameterDefaults[i] = value;
-
-                    //             if (GUILayout.Button("X", GUILayout.Width(32)))
-                    //             {
-                    //                 script.parameterDefaults.RemoveAt(i);
-                    //                 i--;
-                    //             }
-                    //             EditorGUILayout.EndHorizontal();
-                    //         }
-                    //     }
-                    //     EditorGUI.indentLevel -= 1;
-                    // }
                 }
             }
             EditorGUI.indentLevel -= 1;
@@ -257,14 +222,18 @@ namespace VRCAvatarActions
             EditorGUILayout.EndVertical();
         }
 
-        void DrawExpressionParameter(ExpressionParameters.Parameter parameter, bool used)
+        void DrawExpressionParameter(AvatarActions.ParameterDefault parameter)
         {
-            EditorGUI.BeginDisabledGroup(!used);
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
+            EditorGUI.BeginDisabledGroup(!parameter.enabled);
+
             EditorGUILayout.LabelField(ObjectNames.NicifyVariableName(parameter.name), GUILayout.Width(120));
             EditorGUILayout.LabelField(parameter.valueType.ToString(), GUILayout.Width(80));
+
+            EditorGUI.BeginChangeCheck();
+
             switch (parameter.valueType)
             {
                 case ExpressionParameters.ValueType.Int:
@@ -279,9 +248,21 @@ namespace VRCAvatarActions
             }
             parameter.saved = EditorGUILayout.Toggle(parameter.saved, GUILayout.Width(40));
 
+            if (EditorGUI.EndChangeCheck())
+            {
+                ActionsBuilder builder = new ActionsBuilder();
+                builder.UpdateParameter(script.avatarDescriptor, script, parameter.name);
+            }
+
             GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
             EditorGUI.EndDisabledGroup();
+
+            if (parameter.enabled == false && GUILayout.Button("X", GUILayout.MaxWidth(20)))
+            {
+                script.parameterDefaults.Remove(parameter);
+            }
+
+            EditorGUILayout.EndHorizontal();
         }
     }
 }

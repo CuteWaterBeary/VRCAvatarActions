@@ -34,7 +34,9 @@ namespace VRCAvatarActions
 
         public float Far { get => prop.values[3]; set => prop.values[3] = value; }
 
-        public override void AddKeyframes(AnimationClip animation)
+        public override bool ShouldGenerate(bool enter) => enter;
+
+        public override void AddKeyframes(ActionsBuilder builder, BaseActions.Action action, AnimationClip animation, bool enter)
         {
             if (AudioClip == null)
                 return;
@@ -50,16 +52,12 @@ namespace VRCAvatarActions
             child.SetActive(false); //Disable
 
             //Find/Create component
-            var audioSource = child.GetComponent<AudioSource>();
-            if (audioSource == null)
-                audioSource = child.AddComponent<AudioSource>();
+            var audioSource = child.GetOrAddComponent<AudioSource>();
             audioSource.clip = AudioClip;
             audioSource.volume = 0f; //Audio 0 by default
 
             //Spatial
-            var spatialComp = child.GetComponent<VRCSpatialAudioSource>();
-            if (spatialComp == null)
-                spatialComp = child.AddComponent<VRCSpatialAudioSource>();
+            var spatialComp = child.GetOrAddComponent<VRCSpatialAudioSource>();
             spatialComp.EnableSpatialization = Spatial;
             spatialComp.Near = Near;
             spatialComp.Far = Far;
@@ -76,6 +74,11 @@ namespace VRCAvatarActions
                 curve.AddKey(new Keyframe(0f, 1f));
                 animation.SetCurve(subPath, typeof(GameObject), $"m_IsActive", curve);
             }
+        }
+
+        public override void SetState(ActionsBuilder builder, BaseActions.Action action)
+        {
+            
         }
 
         public override void OnGUI(BaseActions context)

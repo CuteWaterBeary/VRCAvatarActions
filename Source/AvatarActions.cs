@@ -14,20 +14,27 @@ namespace VRCAvatarActions
         //Descriptor Data
         public VRCAvatarDescriptor avatarDescriptor;
         public MenuActions menuActions;
-        public ExpressionParameters expressionParametersStorage;
         public List<NonMenuActions> otherActions = new List<NonMenuActions>();
 
         //Build Options
         public List<string> ignoreLayers = new List<string>();
         public List<string> ignoreParameters = new List<string>();
-        public List<ParamDefault> parameterDefaults = new List<ParamDefault>();
+        public List<ParameterDefault> parameterDefaults = new List<ParameterDefault>();
 
         [Serializable]
-        public struct ParamDefault
+        public class ParameterDefault : ExpressionParameters.Parameter
         {
-            public string name;
-            public float value;
-            public bool saved;
+            public bool enabled = true;
+
+            public ParameterDefault() { }
+
+            public ParameterDefault(ExpressionParameters.Parameter parameter)
+            {
+                name = parameter.name;
+                saved = parameter.saved;
+                valueType = parameter.valueType;
+                defaultValue = parameter.defaultValue;
+            }
         }
 
         //Meta

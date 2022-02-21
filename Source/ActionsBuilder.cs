@@ -60,6 +60,27 @@ namespace VRCAvatarActions
             }
         }
 
+        public void UpdateParameter(AvatarDescriptor desc, AvatarActions actionsDesc, string parameterName)
+        {
+            //Store
+            AvatarDescriptor = desc;
+            ActionsDescriptor = actionsDesc;
+            BuildFailed = false;
+
+            AvatarActions.ParameterDefault settingParameter = ActionsDescriptor.parameterDefaults.Find(p => p.name == parameterName);
+            ExpressionParameters.Parameter parameter = FindExpressionParameter(parameterName);
+            if (settingParameter != null && parameter != null)
+            {
+                parameter.defaultValue = settingParameter.defaultValue;
+                parameter.saved = settingParameter.saved;
+            }
+
+            if (ActionsDescriptor.menuActions != null)
+            {
+                ActionsDescriptor.menuActions.SetState(this, parameterName);
+            }
+        }
+
         public void BuildSetup()
         {
             //Action Controller
@@ -194,15 +215,15 @@ namespace VRCAvatarActions
 
                 foreach (var parameter in AvatarDescriptor.expressionParameters.parameters)
                 {
-                    var parameterSetting = ActionsDescriptor.expressionParametersStorage.FindParameter(parameter.name);
-                    if (parameterSetting != null)
+                    AvatarActions.ParameterDefault parameterDefault = ActionsDescriptor.parameterDefaults.Find(p => p.name == parameter.name);
+                    if (parameterDefault != null)
                     {
-                        parameter.defaultValue = parameterSetting.defaultValue;
-                        parameter.saved = parameterSetting.saved;
+                        parameter.defaultValue = parameterDefault.defaultValue;
+                        parameter.saved = parameterDefault.saved;
                     }
                     else
                     {
-                        ActionsDescriptor.expressionParametersStorage.parameters = ActionsDescriptor.expressionParametersStorage.parameters.Append(parameter).ToArray();
+                        ActionsDescriptor.parameterDefaults.Add(new AvatarActions.ParameterDefault(parameter));
                     }
                 }
 
@@ -211,7 +232,7 @@ namespace VRCAvatarActions
                 {
                     var param = AvatarDescriptor.expressionParameters.FindParameter(paramDefault.name);
                     if (param != null)
-                        param.defaultValue = paramDefault.value;
+                        param.defaultValue = paramDefault.defaultValue;
                 }
 
                 //Check parameter count
@@ -223,7 +244,7 @@ namespace VRCAvatarActions
                     return;
                 }
 
-                EditorUtility.SetDirty(ActionsDescriptor.expressionParametersStorage);
+                EditorUtility.SetDirty(ActionsDescriptor);
                 EditorUtility.SetDirty(AvatarDescriptor.expressionParameters);
             }
 
@@ -276,6 +297,18 @@ namespace VRCAvatarActions
                     return param;
             }
             return null;
+        }
+
+        public float GetExpressionParameterDefaultState(Action action)
+        {
+            float value = 0f;
+            if (action is MenuAction menuAction)
+            {
+                AvatarActions.ParameterDefault param = ActionsDescriptor.parameterDefaults.Find(p => p.name == menuAction.parameter);
+                if (param != null)
+                    value = param.defaultValue;
+            }
+            return value;
         }
 
         //Normal
@@ -388,31 +421,30 @@ namespace VRCAvatarActions
             foreach (var action in actions)
             {
                 AnimatorState lastState = waitingState;
+                bool enabledByDefault = GetExpressionParameterDefaultState(action) == 1f;
 
                 //Enable
-                {
-                    var state = layer.stateMachine.AddState(action.name + "_Enable", StatePosition(1, actionIter));
-                    state.motion = action.GetAnimation(this, layerType, true);
+                var enableState = layer.stateMachine.AddState(action.name + "_Enable", StatePosition(1, actionIter));
+                enableState.motion = action.GetAnimation(this, layerType, !enabledByDefault);
 
-                    //Transition
-                    action.AddTransitions(this, controller, lastState, state, action.fadeIn, Action.Trigger.Type.Enter, parentAction);
+                // //Transition
+                action.AddTransitions(this, controller, lastState, enableState, action.fadeIn, enabledByDefault ? Action.Trigger.Type.Exit : Action.Trigger.Type.Enter, parentAction);
 
-                    //Animation Layer Weight
-                    var layerWeight = state.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
-                    layerWeight.goalWeight = 1;
-                    layerWeight.layer = layerIndex;
-                    layerWeight.blendDuration = 0;
-                    layerWeight.playable = VRC.SDKBase.VRC_AnimatorLayerControl.BlendableLayer.FX;
+                //Animation Layer Weight
+                var layerWeight = enableState.AddStateMachineBehaviour<VRCAnimatorLayerControl>();
+                layerWeight.goalWeight = 1;
+                layerWeight.layer = layerIndex;
+                layerWeight.blendDuration = 0;
+                layerWeight.playable = VRC.SDKBase.VRC_AnimatorLayerControl.BlendableLayer.FX;
 
-                    //Tracking
-                    SetupTracking(action, state, TrackingType.Animation);
+                //Tracking
+                SetupTracking(action, enableState, TrackingType.Animation);
 
-                    //Parameter Drivers
-                    BuildParameterDrivers(action, state);
+                //Parameter Drivers
+                BuildParameterDrivers(action, enableState);
 
-                    //Store
-                    lastState = state;
-                }
+                //Store
+                lastState = enableState;
 
                 //Hold
                 if (action.hold > 0)
@@ -425,18 +457,17 @@ namespace VRCAvatarActions
                 if (action.HasExit() || parentAction != null)
                 {
                     //Disable
-                    {
-                        var state = layer.stateMachine.AddState(action.name + "_Disable", StatePosition(3, actionIter));
-                        state.motion = action.GetAnimation(this, layerType, false);
+                    var disableState = layer.stateMachine.AddState(action.name + "_Disable", StatePosition(3, actionIter));
+                    disableState.motion = action.GetAnimation(this, layerType, enabledByDefault);
 
-                        //Transition
-                        action.AddTransitions(this, controller, lastState, state, 0, Action.Trigger.Type.Exit, parentAction);
+                    //Transition
+                    action.AddTransitions(this, controller, lastState, disableState, 0, enabledByDefault ? Action.Trigger.Type.Enter : Action.Trigger.Type.Exit, parentAction);
 
-                        //Store
-                        lastState = state;
-                    }
+                    //Store
+                    lastState = disableState;
 
-                    BuildFadeoutState(action, layer, StatePosition(4, actionIter), null, ref lastState);
+                    // Euan: I don't think this is needed?
+                    // BuildFadeoutState(action, layer, StatePosition(4, actionIter), null, ref lastState);
 
                     BuildCleanupState(action, layer, StatePosition(5, actionIter), ref lastState);
 
@@ -877,42 +908,34 @@ namespace VRCAvatarActions
                     if (!action.ShouldBuild())
                         continue;
 
-                    if (action.menuType == MenuAction.MenuType.Button)
+                    if (action.menuType == MenuAction.MenuType.Button || action.menuType == MenuAction.MenuType.Toggle || action.menuType == MenuAction.MenuType.Slider)
                     {
                         //Create control
                         var control = new VRCExpressionsMenu.Control();
                         control.name = action.name;
                         control.icon = action.icon;
-                        control.type = VRCExpressionsMenu.Control.ControlType.Button;
-                        control.parameter = new VRCExpressionsMenu.Control.Parameter();
-                        control.parameter.name = action.parameter;
                         control.value = action.controlValue;
                         expressionsMenu.controls.Add(control);
-                    }
-                    else if (action.menuType == MenuAction.MenuType.Toggle)
-                    {
-                        //Create control
-                        var control = new VRCExpressionsMenu.Control();
-                        control.name = action.name;
-                        control.icon = action.icon;
-                        control.type = VRCExpressionsMenu.Control.ControlType.Toggle;
-                        control.parameter = new VRCExpressionsMenu.Control.Parameter();
-                        control.parameter.name = action.parameter;
-                        control.value = action.controlValue;
-                        expressionsMenu.controls.Add(control);
-                    }
-                    else if (action.menuType == MenuAction.MenuType.Slider)
-                    {
-                        //Create control
-                        var control = new VRCExpressionsMenu.Control();
-                        control.name = action.name;
-                        control.icon = action.icon;
-                        control.type = VRCExpressionsMenu.Control.ControlType.RadialPuppet;
-                        control.subParameters = new VRCExpressionsMenu.Control.Parameter[1];
-                        control.subParameters[0] = new VRCExpressionsMenu.Control.Parameter();
-                        control.subParameters[0].name = action.parameter;
-                        control.value = action.controlValue;
-                        expressionsMenu.controls.Add(control);
+
+                        if (action.menuType == MenuAction.MenuType.Button)
+                        {
+                            control.type = VRCExpressionsMenu.Control.ControlType.Button;
+                            control.parameter = new VRCExpressionsMenu.Control.Parameter();
+                            control.parameter.name = action.parameter;
+                        }
+                        else if (action.menuType == MenuAction.MenuType.Toggle)
+                        {
+                            control.type = VRCExpressionsMenu.Control.ControlType.Toggle;
+                            control.parameter = new VRCExpressionsMenu.Control.Parameter();
+                            control.parameter.name = action.parameter;
+                        }
+                        else if (action.menuType == MenuAction.MenuType.Slider)
+                        {
+                            control.type = VRCExpressionsMenu.Control.ControlType.RadialPuppet;
+                            control.subParameters = new VRCExpressionsMenu.Control.Parameter[1];
+                            control.subParameters[0] = new VRCExpressionsMenu.Control.Parameter();
+                            control.subParameters[0].name = action.parameter;
+                        }
                     }
                     else if (action.menuType == MenuAction.MenuType.SubMenu)
                     {
@@ -1102,6 +1125,14 @@ namespace VRCAvatarActions
                         subActions.Build(this, parentAction);
                     }
                 }
+            }
+        }
+
+        public void SetActionStates(List<MenuAction> sourceActions)
+        {
+            foreach (var action in sourceActions)
+            {
+                action.SetState(this);
             }
         }
 
