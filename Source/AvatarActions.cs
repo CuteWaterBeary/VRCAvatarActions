@@ -11,16 +11,6 @@ namespace VRCAvatarActions
     [ExecuteAlways]
     public class AvatarActions : MonoBehaviour
     {
-        //Descriptor Data
-        public VRCAvatarDescriptor avatarDescriptor;
-        public MenuActions menuActions;
-        public List<NonMenuActions> otherActions = new List<NonMenuActions>();
-
-        //Build Options
-        public List<string> ignoreLayers = new List<string>();
-        public List<string> ignoreParameters = new List<string>();
-        public List<ParameterDefault> parameterDefaults = new List<ParameterDefault>();
-
         [Serializable]
         public class ParameterDefault : ExpressionParameters.Parameter
         {
@@ -36,6 +26,17 @@ namespace VRCAvatarActions
                 defaultValue = parameter.defaultValue;
             }
         }
+
+
+        //Descriptor Data
+        public VRCAvatarDescriptor avatarDescriptor;
+        public MenuActions menuActions;
+        public List<NonMenuActions> otherActions = new List<NonMenuActions>();
+
+        //Build Options
+        public List<string> ignoreLayers = new List<string>();
+        public List<string> ignoreParameters = new List<string>();
+        public List<ParameterDefault> parameterDefaults = new List<ParameterDefault>();
 
         //Meta
         public bool foldoutParameterSettings = false;
