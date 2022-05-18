@@ -1,0 +1,16 @@
+{
+    "name": "net.euan.vrcavataractions",
+    "displayName": "VRCAvatarActions",
+    "version": "1.0.0",
+    "unity": "2019.4",
+    "description": "Unity script for creating avatar 3.0 content faster and easier.",
+    "gitDependencies": {
+      "com.vrchat.base": "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.base#3.0.4",
+      "com.vrchat.avatars": "https://github.com/vrchat/packages.git?path=/packages/com.vrchat.avatars#3.0.4"
+    },
+    "author": {
+      "name": "BirdPeep & euan142",
+      "url": "https://github.com/euan142/VRCAvatarActions"
+    },
+    "url": "https://github.com/euan142/VRCAvatarActions"
+  }
