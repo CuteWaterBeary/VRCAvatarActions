@@ -1,15 +1,15 @@
 ﻿#if UNITY_EDITOR
 using System.Collections.Generic;
-using UnityEngine;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
-using System.Linq;
+using UnityEngine;
 
 namespace VRCAvatarActions
 {
-	[CreateAssetMenu(fileName = "Visemes", menuName = "VRCAvatarActions/Other Actions/Visemes")]
-	public class Visemes : NonMenuActions
-	{
+    [CreateAssetMenu(fileName = "Visemes", menuName = "VRCAvatarActions/Other Actions/Visemes")]
+    public class Visemes : NonMenuActions
+    {
         [System.Serializable]
         public class VisemeAction : Action
         {
@@ -55,6 +55,7 @@ namespace VRCAvatarActions
                     }
                     return false;
                 }
+
                 public void SetValue(VisemeEnum type, bool value)
                 {
                     switch (type)
@@ -77,13 +78,12 @@ namespace VRCAvatarActions
                     }
                 }
 
-                public bool IsModified()
-                {
-                    return sil || pp || ff || th || dd || kk || ch || ss || nn || rr || aa || e || i || o || u;
-                }
+                public bool IsModified() => sil || pp || ff || th || dd || kk || ch || ss || nn || rr || aa || e || i || o || u;
             }
+
             public VisemeTable visimeTable = new VisemeTable();
         }
+
         public List<VisemeAction> actions = new List<VisemeAction>();
 
         public override void GetActions(List<Action> output)
@@ -91,41 +91,33 @@ namespace VRCAvatarActions
             foreach (var action in actions)
                 output.Add(action);
         }
+
         public override Action AddAction()
         {
             var result = new VisemeAction();
             actions.Add(result);
             return result;
         }
-        public override void RemoveAction(Action action)
-        {
-            actions.Remove(action as VisemeAction);
-        }
-        public override void InsertAction(int index, Action action)
-        {
-            actions.Insert(index, action as VisemeAction);
-        }
 
-        public override bool CanUseLayer(BaseActions.AnimationLayer layer)
-        {
-            return layer == AnimationLayer.FX;
-        }
-        public override bool ActionsHaveExit()
-        {
-            return false;
-        }
+        public override void RemoveAction(Action action) => actions.Remove(action as VisemeAction);
+        public override void InsertAction(int index, Action action) => actions.Insert(index, action as VisemeAction);
 
-        public override void Build(MenuActions.MenuAction parentAction)
+        public override bool CanUseLayer(AnimationLayer layer) => layer == AnimationLayer.FX;
+
+        public override bool ActionsHaveExit() => false;
+
+        public override void Build(ActionsBuilder builder, MenuActions.MenuAction parentAction)
         {
             //Layer name
-            var layerName = this.name;
+            var layerName = name;
             if (parentAction != null)
                 layerName = $"{parentAction.name}_{layerName}_SubActions";
 
             //Build
-            BuildNormal(AnimationLayer.FX, layerName, this.actions, parentAction);
+            BuildNormal(builder, AnimationLayer.FX, layerName, actions, parentAction);
         }
-        void BuildNormal(AnimationLayer layerType, string layerName, List<VisemeAction> sourceActions, MenuActions.MenuAction parentAction)
+
+        void BuildNormal(ActionsBuilder builder, AnimationLayer layerType, string layerName, List<VisemeAction> sourceActions, MenuActions.MenuAction parentAction)
         {
             //Find all that affect this layer
             var layerActions = new List<VisemeAction>();
@@ -141,25 +133,26 @@ namespace VRCAvatarActions
                 return;
 
             //Build
-            BuildLayer(layerType, layerName, layerActions, parentAction);
+            BuildLayer(builder, layerType, layerName, layerActions, parentAction);
         }
-        void BuildLayer(AnimationLayer layerType, string layerName, List<VisemeAction> actions, MenuActions.MenuAction parentAction)
+
+        void BuildLayer(ActionsBuilder builder, AnimationLayer layerType, string layerName, List<VisemeAction> actions, MenuActions.MenuAction parentAction)
         {
-            var controller = GetController(layerType);
+            var controller = builder.GetController(layerType);
 
             var VisemeValues = System.Enum.GetValues(typeof(VisemeEnum)).Cast<VisemeEnum>();
 
             //Add parameter
-            AddParameter(controller, "Viseme", AnimatorControllerParameterType.Int, 0);
+            builder.AddParameter(controller, "Viseme", AnimatorControllerParameterType.Int, 0);
 
             //Prepare layer
-            var layer = GetControllerLayer(controller, layerName);
+            var layer = builder.GetControllerLayer(controller, layerName);
             layer.stateMachine.entryTransitions = null;
             layer.stateMachine.anyStateTransitions = null;
             layer.stateMachine.states = null;
-            layer.stateMachine.entryPosition = StatePosition(-1, 0);
-            layer.stateMachine.anyStatePosition = StatePosition(-1, 1);
-            layer.stateMachine.exitPosition = StatePosition(-1, 2);
+            layer.stateMachine.entryPosition = builder.StatePosition(-1, 0);
+            layer.stateMachine.anyStatePosition = builder.StatePosition(-1, 1);
+            layer.stateMachine.exitPosition = builder.StatePosition(-1, 2);
 
             //Default
             AnimatorState defaultState = null;
@@ -173,27 +166,19 @@ namespace VRCAvatarActions
             foreach (var action in this.actions)
             {
                 //Check if valid
-                if(!action.visimeTable.IsModified())
+                if (!action.visimeTable.IsModified())
                 {
                     EditorUtility.DisplayDialog("Build Warning", $"Visemes {action.name} has no selected conditions.", "Okay");
                     continue;
                 }
 
                 //Build
-                var state = layer.stateMachine.AddState(action.name, StatePosition(0, actionIter + 1));
-                state.motion = action.GetAnimation(layerType, true);
-                if(!string.IsNullOrEmpty(action.timeParameter))
-                {
-                    state.timeParameter = action.timeParameter;
-                    state.timeParameterActive = true;
-                    AddParameter(controller, action.timeParameter, AnimatorControllerParameterType.Float, 0);
-                }
+                var state = layer.stateMachine.AddState(action.name, builder.StatePosition(0, actionIter + 1));
+                state.motion = action.GetAnimation(builder, layerType, true);
                 actionIter += 1;
 
                 //Conditions
-                foreach (var value in VisemeValues)
-                    AddCondition(value);
-                void AddCondition(BaseActions.VisemeEnum visime)
+                foreach (var visime in VisemeValues)
                 {
                     if (action.visimeTable.GetValue(visime))
                     {
@@ -206,8 +191,8 @@ namespace VRCAvatarActions
                         transition.AddCondition(AnimatorConditionMode.Equals, (int)visime, "Viseme");
 
                         //Parent
-                        if(parentAction != null)
-                            parentAction.AddCondition(transition, true);
+                        if (parentAction != null)
+                            parentAction.AddCondition(builder, transition, true);
 
                         //Cleanup
                         unusedValues.Remove(visime);
@@ -223,9 +208,16 @@ namespace VRCAvatarActions
             }
 
             //Default state
-            if(defaultState == null)
-                defaultState = layer.stateMachine.AddState("Default", StatePosition(0, 0));
+            if (defaultState == null)
+                defaultState = layer.stateMachine.AddState("Default", builder.StatePosition(0, 0));
             layer.stateMachine.defaultState = defaultState;
+
+            //Animation Layer Weight
+            var layerWeight = defaultState.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCAnimatorLayerControl>();
+            layerWeight.goalWeight = 1;
+            layerWeight.layer = builder.GetLayerIndex(controller, layer);
+            layerWeight.blendDuration = 0;
+            layerWeight.playable = VRC.SDKBase.VRC_AnimatorLayerControl.BlendableLayer.FX;
 
             //Default transitions
             foreach (var visime in unusedValues)
@@ -247,67 +239,8 @@ namespace VRCAvatarActions
                 transition.exitTime = 0;
                 transition.duration = defaultAction != null ? defaultAction.fadeIn : 0f;
                 transition.canTransitionToSelf = false;
-                parentAction.AddCondition(transition, false);
+                parentAction.AddCondition(builder, transition, false);
             }
-        }
-    }
-
-    [CustomEditor(typeof(Visemes))]
-    public class VisemesEditor : BaseActionsEditor
-    {
-        Visemes visemesScript;
-        IEnumerable<BaseActions.VisemeEnum> VisemeValues;
-
-        public new void OnEnable()
-        {
-            base.OnEnable();
-            VisemeValues = System.Enum.GetValues(typeof(BaseActions.VisemeEnum)).Cast<BaseActions.VisemeEnum>();
-            visemesScript = target as Visemes;
-        }
-        public override void Inspector_Header()
-        {
-            EditorGUILayout.HelpBox("Visimes - Simplified actions triggered by visimes.", MessageType.Info);
-        }
-        public override void Inspector_Action_Header(BaseActions.Action action)
-        {
-            var VisemeAction = (Visemes.VisemeAction)action;
-
-            //Name
-            action.name = EditorGUILayout.TextField("Name", action.name);
-
-            //Viseme
-            EditorGUILayout.BeginVertical(GUI.skin.box);
-            EditorGUI.indentLevel += 1;
-            {
-                EditorGUILayout.LabelField("Viseme");
-                foreach (var value in VisemeValues)
-                    DrawVisemeToggle(value.ToString(), value);
-
-                void DrawVisemeToggle(string name, BaseActions.VisemeEnum type)
-                {
-                    var value = VisemeAction.visimeTable.GetValue(type);
-                    EditorGUI.BeginDisabledGroup(!value && !CheckVisemeTypeUsed(type));
-                    VisemeAction.visimeTable.SetValue(type, EditorGUILayout.Toggle(name, value));
-                    EditorGUI.EndDisabledGroup();
-                }
-            }
-            EditorGUI.indentLevel -= 1;
-            EditorGUILayout.EndVertical();
-
-            //Warning
-            if(!VisemeAction.visimeTable.IsModified())
-            {
-                EditorGUILayout.HelpBox("No conditions currently selected.", MessageType.Warning);
-            }
-        }
-        bool CheckVisemeTypeUsed(BaseActions.VisemeEnum type)
-        {
-            foreach (var action in visemesScript.actions)
-            {
-                if (action.visimeTable.GetValue(type))
-                    return false;
-            }
-            return true;
         }
     }
 }

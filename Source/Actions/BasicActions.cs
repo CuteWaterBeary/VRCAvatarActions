@@ -1,11 +1,7 @@
 ﻿#if UNITY_EDITOR
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
 using UnityEditor.Animations;
-using ExpressionsMenu = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu;
-using AvatarDescriptor = VRC.SDK3.Avatars.Components.VRCAvatarDescriptor;
-using ExpressionParameters = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters;
+using UnityEngine;
 
 namespace VRCAvatarActions
 {
@@ -18,7 +14,7 @@ namespace VRCAvatarActions
             public override bool HasExit()
             {
                 //Check for exit transition
-                foreach(var trigger in triggers)
+                foreach (var trigger in triggers)
                 {
                     if (trigger.type == Trigger.Type.Exit)
                         return true;
@@ -26,7 +22,7 @@ namespace VRCAvatarActions
                 return false;
             }
         }
-        public bool anyState = false;
+
         public List<GenericAction> actions = new List<GenericAction>();
 
         public override void GetActions(List<Action> output)
@@ -34,30 +30,35 @@ namespace VRCAvatarActions
             foreach (var action in actions)
                 output.Add(action);
         }
+
         public override Action AddAction()
         {
             var result = new GenericAction();
             actions.Add(result);
             return result;
         }
+
         public override void RemoveAction(Action action)
         {
             actions.Remove(action as GenericAction);
         }
+
         public override void InsertAction(int index, Action action)
         {
             actions.Insert(index, action as GenericAction);
         }
 
-        public override void Build(MenuActions.MenuAction parentAction)
+
+        public override void Build(ActionsBuilder builder, MenuActions.MenuAction parentAction)
         {
-            BuildLayers(actions, AnimationLayer.Action, parentAction);
-            BuildLayers(actions, AnimationLayer.FX, parentAction);
+            BuildLayers(builder, actions, AnimationLayer.Action, parentAction);
+            BuildLayers(builder, actions, AnimationLayer.FX, parentAction);
         }
-        void BuildLayers(IEnumerable<GenericAction> sourceActions, AnimationLayer layerType, MenuActions.MenuAction parentAction)
+
+        void BuildLayers(ActionsBuilder builder, IEnumerable<GenericAction> sourceActions, AnimationLayer layerType, MenuActions.MenuAction parentAction)
         {
             //Build normal
-            BuildGroupedLayers(sourceActions, layerType, parentAction,
+            builder.BuildGroupedLayers(sourceActions, layerType, parentAction,
             delegate (Action action)
             {
                 if (!action.AffectsLayer(layerType))
@@ -72,19 +73,10 @@ namespace VRCAvatarActions
 
                 //Build layer
                 if (layerType == AnimationLayer.Action)
-                    BuildActionLayer(controller, actions, layerName, parentAction);
+                    builder.BuildActionLayer(controller, actions, layerName, parentAction);
                 else
-                    BuildNormalLayer(controller, actions, layerName, layerType, parentAction);
+                    builder.BuildNormalLayer(controller, actions, layerName, layerType, parentAction);
             });
-        }
-    }
-
-    [CustomEditor(typeof(BasicActions))]
-    public class GenericActionsEditor : BaseActionsEditor
-    {
-        public override void Inspector_Header()
-        {
-            EditorGUILayout.HelpBox("Basic Actions - Actions with no default triggers.", MessageType.Info);
         }
     }
 }

@@ -1,13 +1,13 @@
 ﻿#if UNITY_EDITOR
 
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor.Animations;
-using VRCAvatarActions;
+using UnityEngine;
 using VRC.SDK3.Avatars.ScriptableObjects;
+using VRCAvatarActions;
 
 [CreateAssetMenu(fileName = "VisemeToVolume", menuName = "VRCAvatarActions/Special Actions/VisemeToVolume")]
-public class VisemeToVolume : VRCAvatarActions.NonMenuActions
+public class VisemeToVolume : NonMenuActions
 {
     public string parameter;
     public AnimationClip animationFx;
@@ -17,9 +17,9 @@ public class VisemeToVolume : VRCAvatarActions.NonMenuActions
     public override void RemoveAction(Action action) { }
     public override void InsertAction(int index, Action action) { }
 
-    public override void Build(MenuActions.MenuAction parent)
+    public override void Build(ActionsBuilder builder, MenuActions.MenuAction parent)
     {
-        var controller = GetController(AnimationLayer.FX);
+        var controller = builder.GetController(AnimationLayer.FX);
 
         //Define volume param
         {
@@ -28,34 +28,35 @@ public class VisemeToVolume : VRCAvatarActions.NonMenuActions
             param.valueType = VRCExpressionParameters.ValueType.Float;
             param.defaultValue = 0;
             param.saved = false;
-            DefineExpressionParameter(param);
+            builder.DefineExpressionParameter(param);
         }
 
         //Define parameters on controller
-        AddParameter(controller, "Viseme", AnimatorControllerParameterType.Int, 0);
-        AddParameter(controller, parameter, AnimatorControllerParameterType.Float, 0);
+        builder.AddParameter(controller, "Viseme", AnimatorControllerParameterType.Int, 0);
+        builder.AddParameter(controller, parameter, AnimatorControllerParameterType.Float, 0);
 
-        BuildDriverLayer();
-        BuildAnimationLayer();
+        BuildDriverLayer(builder);
+        BuildAnimationLayer(builder);
     }
-    void BuildDriverLayer()
-    {
-        var controller = GetController(AnimationLayer.FX);
 
-        var layer = GetControllerLayer(controller, "VisimeVolumeDriver");
+    void BuildDriverLayer(ActionsBuilder builder)
+    {
+        var controller = builder.GetController(AnimationLayer.FX);
+
+        var layer = builder.GetControllerLayer(controller, "VisimeVolumeDriver");
         layer.stateMachine.entryTransitions = null;
         layer.stateMachine.anyStateTransitions = null;
         layer.stateMachine.states = null;
-        layer.stateMachine.entryPosition = StatePosition(-1, 0);
-        layer.stateMachine.anyStatePosition = StatePosition(-1, 1);
-        layer.stateMachine.exitPosition = StatePosition(7, 0);
+        layer.stateMachine.entryPosition = builder.StatePosition(-1, 0);
+        layer.stateMachine.anyStatePosition = builder.StatePosition(-1, 1);
+        layer.stateMachine.exitPosition = builder.StatePosition(7, 0);
 
-        int layerIndex = GetLayerIndex(controller, layer);
+        int layerIndex = builder.GetLayerIndex(controller, layer);
 
         for (int i = 0; i <= 100; i++)
         {
             //State
-            var state = layer.stateMachine.AddState($"Volume_{i}", StatePosition(1, i));
+            var state = layer.stateMachine.AddState($"Volume_{i}", builder.StatePosition(1, i));
 
             //Transition
             var transition = layer.stateMachine.AddAnyStateTransition(state);
@@ -63,18 +64,19 @@ public class VisemeToVolume : VRCAvatarActions.NonMenuActions
             transition.hasExitTime = false;
             transition.duration = 0;
             transition.hasFixedDuration = true;
-            transition.AddCondition(AnimatorConditionMode.Equals, (float)i, "Viseme");
+            transition.AddCondition(AnimatorConditionMode.Equals, i, "Viseme");
 
             //Playable
             var driver = state.AddStateMachineBehaviour<VRC.SDK3.Avatars.Components.VRCAvatarParameterDriver>();
-            var param = new VRC.SDK3.Avatars.Components.VRCAvatarParameterDriver.Parameter();
+            var param = new VRC.SDKBase.VRC_AvatarParameterDriver.Parameter();
             param.name = parameter;
             param.type = VRC.SDKBase.VRC_AvatarParameterDriver.ChangeType.Set;
-            param.value = (float)i * 0.01f;
+            param.value = i * 0.01f;
             driver.parameters.Add(param);
         }
     }
-    void BuildAnimationLayer()
+
+    void BuildAnimationLayer(ActionsBuilder builder)
     {
         var action = new MenuActions.MenuAction();
         action.menuType = MenuActions.MenuAction.MenuType.Slider;
@@ -84,7 +86,7 @@ public class VisemeToVolume : VRCAvatarActions.NonMenuActions
 
         List<MenuActions.MenuAction> list = new List<MenuActions.MenuAction>();
         list.Add(action);
-        MenuActions.BuildSliderLayer(list, AnimationLayer.FX, action.parameter);
+        builder.BuildSliderLayer(list, AnimationLayer.FX, action.parameter);
     }
 }
 
